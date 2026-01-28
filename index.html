@@ -295,9 +295,6 @@
             border: 1px solid rgba(255,255,255,0.05);
             border-radius: 20px;
             padding: 8px;
-            max-height: 350px;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
         }
 
         .history-item {
@@ -554,6 +551,7 @@
         .modal input[type="number"],
         .modal textarea {
             width: 100%;
+            box-sizing: border-box;
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 12px;
@@ -561,6 +559,12 @@
             font-size: 16px;
             font-family: inherit;
             color: white;
+        }
+
+        .modal input[type="datetime-local"] {
+            min-width: 0;
+            -webkit-appearance: none;
+            appearance: none;
         }
 
         .modal textarea {
@@ -917,7 +921,7 @@
             <div class="section-title">
                 <span>Full History</span>
             </div>
-            <div class="history-card" style="max-height: 500px;">
+            <div class="history-card">
                 <div id="full-history"></div>
             </div>
 
@@ -1003,8 +1007,21 @@
     <div class="modal-overlay" id="edit-modal">
         <div class="modal">
             <h3><span id="edit-modal-emoji">🐕</span> Edit <span id="edit-modal-title">Event</span></h3>
-            <label>Date & Time</label>
+            <label id="edit-timestamp-label">Date & Time</label>
             <input type="datetime-local" id="edit-timestamp">
+            <div id="edit-duration-section" class="hidden">
+                <label>Duration</label>
+                <div class="duration-inputs">
+                    <div>
+                        <input type="number" id="edit-sleep-hours" min="0" max="23" placeholder="0">
+                        <div class="input-label">Hours</div>
+                    </div>
+                    <div>
+                        <input type="number" id="edit-sleep-minutes" min="0" max="59" placeholder="0">
+                        <div class="input-label">Minutes</div>
+                    </div>
+                </div>
+            </div>
             <label>Comment</label>
             <textarea id="edit-comment" placeholder="Add a note..."></textarea>
             <div class="modal-buttons">
@@ -1295,16 +1312,40 @@
 
             editingEvent = event;
             const config = EVENT_CONFIG[event.type] || { emoji: '📝', label: 'Event' };
-            
+
             document.getElementById('edit-modal-emoji').textContent = config.emoji;
             document.getElementById('edit-modal-title').textContent = config.label;
-            
+
             const timestamp = getTimestamp(event);
             const localDateTime = new Date(timestamp.getTime() - timestamp.getTimezoneOffset() * 60000)
                 .toISOString().slice(0, 16);
             document.getElementById('edit-timestamp').value = localDateTime;
             document.getElementById('edit-comment').value = event.comment || '';
-            
+
+            // Handle sleep event duration editing
+            const durationSection = document.getElementById('edit-duration-section');
+            const timestampLabel = document.getElementById('edit-timestamp-label');
+
+            if (event.type === 'sleep' && event.sleepDuration) {
+                // Show duration inputs for sleep events
+                durationSection.classList.remove('hidden');
+                timestampLabel.textContent = 'Wake Up Date & Time';
+
+                // Pre-populate duration from sleepDuration (stored in milliseconds)
+                const totalMinutes = Math.floor(event.sleepDuration / 60000);
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+
+                document.getElementById('edit-sleep-hours').value = hours;
+                document.getElementById('edit-sleep-minutes').value = minutes;
+            } else {
+                // Hide duration inputs for non-sleep events
+                durationSection.classList.add('hidden');
+                timestampLabel.textContent = 'Date & Time';
+                document.getElementById('edit-sleep-hours').value = '';
+                document.getElementById('edit-sleep-minutes').value = '';
+            }
+
             document.getElementById('edit-modal').classList.add('show');
         }
 
@@ -1320,10 +1361,31 @@
             const newComment = document.getElementById('edit-comment').value.trim();
 
             try {
-                await db.collection('events').doc(editingEvent.id).update({
+                const updateData = {
                     timestamp: firebase.firestore.Timestamp.fromDate(newTimestamp),
                     comment: newComment
-                });
+                };
+
+                // Handle sleep event duration editing
+                if (editingEvent.type === 'sleep') {
+                    const hours = parseInt(document.getElementById('edit-sleep-hours').value) || 0;
+                    const minutes = parseInt(document.getElementById('edit-sleep-minutes').value) || 0;
+
+                    if (hours === 0 && minutes === 0) {
+                        showToast('Please enter a duration');
+                        return;
+                    }
+
+                    const durationMs = (hours * 60 + minutes) * 60 * 1000;
+                    const sleepEnd = newTimestamp;
+                    const sleepStart = new Date(sleepEnd.getTime() - durationMs);
+
+                    updateData.sleepDuration = durationMs;
+                    updateData.sleepEnd = firebase.firestore.Timestamp.fromDate(sleepEnd);
+                    updateData.sleepStart = firebase.firestore.Timestamp.fromDate(sleepStart);
+                }
+
+                await db.collection('events').doc(editingEvent.id).update(updateData);
                 showToast('Event updated');
                 closeEditModal();
             } catch (error) {
@@ -1616,7 +1678,7 @@
                     <span class="emoji">${config.emoji}</span>
                     <div class="details">
                         <div class="event-type">${config.label}</div>
-                        <div class="time">${formatTime(timestamp)} · ${formatTimeAgo(event)}</div>
+                        <div class="time">${formatTime(timestamp)}</div>
                         ${durationHtml}
                         ${commentHtml}
                     </div>
