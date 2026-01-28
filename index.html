@@ -731,6 +731,79 @@
         .summary-card.accidents .value {
             color: #f87171;
         }
+
+        /* Active Sleep Banner */
+        .active-sleep-banner {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.25) 0%, rgba(109, 40, 217, 0.15) 100%);
+            border: 1px solid rgba(167, 139, 250, 0.4);
+            border-radius: 16px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+            animation: sleepPulse 3s ease-in-out infinite;
+        }
+
+        .active-sleep-banner.show {
+            display: flex;
+        }
+
+        @keyframes sleepPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.2); }
+            50% { box-shadow: 0 0 30px rgba(139, 92, 246, 0.4); }
+        }
+
+        .active-sleep-banner .sleep-info {
+            flex: 1;
+        }
+
+        .active-sleep-banner .sleep-emoji {
+            font-size: 28px;
+        }
+
+        .active-sleep-banner .sleep-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #a78bfa;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .active-sleep-banner .sleep-elapsed {
+            font-weight: 700;
+            color: white;
+        }
+
+        .active-sleep-banner .sleep-subtitle {
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+            margin-top: 2px;
+        }
+
+        .active-sleep-banner .stop-sleep-btn {
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+            border: none;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .active-sleep-banner .stop-sleep-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Start Sleep Button */
+        .event-btn.sleep-start {
+            background: linear-gradient(135deg, rgba(52, 211, 153, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
+            border-color: rgba(52, 211, 153, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -744,7 +817,7 @@
         <header>
             <div class="header-left">
                 <h1>Leya</h1>
-                <p>Tap to log • Hold to edit time</p>
+                <p id="header-hint">Tap to log • Hold to edit time</p>
             </div>
             <div class="header-right">
                 <div class="header-avatar">🐕</div>
@@ -763,6 +836,16 @@
                 <div class="subtitle" id="reminder-subtitle">It's been a while since the last pee</div>
             </div>
             <button class="close-btn" onclick="dismissReminder()">×</button>
+        </div>
+
+        <!-- Active Sleep Banner -->
+        <div class="active-sleep-banner" id="active-sleep-banner">
+            <span class="sleep-emoji">😴</span>
+            <div class="sleep-info">
+                <div class="sleep-title">Sleep in progress • <span class="sleep-elapsed" id="sleep-elapsed">0m</span></div>
+                <div class="sleep-subtitle">Started <span id="sleep-start-time">--:--</span></div>
+            </div>
+            <button class="stop-sleep-btn" onclick="stopSleep()">Stop Sleep</button>
         </div>
 
         <!-- Log View -->
@@ -806,10 +889,14 @@
             </div>
 
             <div class="section-label">Daily Activities</div>
-            <div class="activity-row">
+            <div class="activity-row" style="grid-template-columns: repeat(3, 1fr);">
                 <button class="event-btn meal" data-event="meal">
                     <span class="emoji">🍖</span>
                     <span>Meal</span>
+                </button>
+                <button class="event-btn sleep-start" id="start-sleep-btn" onclick="startSleep()">
+                    <span class="emoji">🛏️</span>
+                    <span>Start Sleep</span>
                 </button>
                 <button class="event-btn sleep" onclick="openManualSleepModal()">
                     <span class="emoji">😴</span>
@@ -1320,6 +1407,119 @@
             }
         }
 
+        // Active Sleep Timer functionality
+        let sleepUpdateInterval = null;
+
+        function startSleep() {
+            // Check if sleep is already active
+            if (localStorage.getItem('activeSleepStart')) {
+                showToast('Sleep is already in progress!');
+                return;
+            }
+
+            const now = Date.now();
+            localStorage.setItem('activeSleepStart', now.toString());
+            showActiveSleepBanner(now);
+            showToast('🛏️ Sleep started!');
+
+            // Disable start button
+            document.getElementById('start-sleep-btn').disabled = true;
+        }
+
+        function showActiveSleepBanner(startTimestamp) {
+            const banner = document.getElementById('active-sleep-banner');
+            const startTimeEl = document.getElementById('sleep-start-time');
+            const startDate = new Date(startTimestamp);
+
+            // Format start time
+            startTimeEl.textContent = startDate.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+
+            banner.classList.add('show');
+            document.getElementById('start-sleep-btn').disabled = true;
+
+            // Update elapsed time immediately and then every minute
+            updateSleepElapsed(startTimestamp);
+            if (sleepUpdateInterval) clearInterval(sleepUpdateInterval);
+            sleepUpdateInterval = setInterval(() => updateSleepElapsed(startTimestamp), 60000);
+        }
+
+        function updateSleepElapsed(startTimestamp) {
+            const now = Date.now();
+            const elapsedMs = now - startTimestamp;
+            const elapsedMins = Math.floor(elapsedMs / 60000);
+            const hours = Math.floor(elapsedMins / 60);
+            const mins = elapsedMins % 60;
+
+            let elapsedText;
+            if (hours > 0) {
+                elapsedText = `${hours}h ${mins}m`;
+            } else {
+                elapsedText = `${mins}m`;
+            }
+
+            document.getElementById('sleep-elapsed').textContent = elapsedText;
+        }
+
+        function hideActiveSleepBanner() {
+            const banner = document.getElementById('active-sleep-banner');
+            banner.classList.remove('show');
+            document.getElementById('start-sleep-btn').disabled = false;
+
+            if (sleepUpdateInterval) {
+                clearInterval(sleepUpdateInterval);
+                sleepUpdateInterval = null;
+            }
+        }
+
+        async function stopSleep() {
+            const startTimestamp = localStorage.getItem('activeSleepStart');
+            if (!startTimestamp) {
+                showToast('No active sleep to stop');
+                return;
+            }
+
+            const startTime = new Date(parseInt(startTimestamp));
+            const endTime = new Date();
+            const durationMs = endTime.getTime() - startTime.getTime();
+
+            // Calculate formatted duration for toast
+            const totalMins = Math.floor(durationMs / 60000);
+            const hours = Math.floor(totalMins / 60);
+            const mins = totalMins % 60;
+            const durationText = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+            try {
+                await db.collection('events').add({
+                    type: 'sleep',
+                    timestamp: firebase.firestore.Timestamp.fromDate(endTime),
+                    sleepStart: firebase.firestore.Timestamp.fromDate(startTime),
+                    sleepEnd: firebase.firestore.Timestamp.fromDate(endTime),
+                    sleepDuration: durationMs,
+                    comment: '',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Clear localStorage and hide banner
+                localStorage.removeItem('activeSleepStart');
+                hideActiveSleepBanner();
+                showToast(`😴 ${durationText} sleep logged!`);
+            } catch (error) {
+                console.error('Error saving sleep:', error);
+                showToast('Error saving sleep - will retry');
+            }
+        }
+
+        function checkActiveSleep() {
+            const startTimestamp = localStorage.getItem('activeSleepStart');
+            if (startTimestamp) {
+                showActiveSleepBanner(parseInt(startTimestamp));
+            }
+        }
+
         async function logEvent(type, comment = '') {
             const now = new Date();
             await logEventWithTimestamp(type, now, comment);
@@ -1491,8 +1691,8 @@
         function updateStats() {
             const today = getTodayString();
 
-            // Last pee (with color coding)
-            const lastPee = events.find(e => e.type === 'pee');
+            // Last pee (with color coding) - includes accidents
+            const lastPee = events.find(e => e.type === 'pee' || e.type === 'accident-pee');
             const lastPeeEl = document.getElementById('last-pee');
             if (lastPee) {
                 const peeTime = getTimestamp(lastPee);
@@ -1509,8 +1709,8 @@
                 lastPeeEl.className = 'value';
             }
 
-            // Last poo (with color coding)
-            const lastPoo = events.find(e => e.type === 'poo');
+            // Last poo (with color coding) - includes accidents
+            const lastPoo = events.find(e => e.type === 'poo' || e.type === 'accident-poo');
             const lastPooEl = document.getElementById('last-poo');
             if (lastPoo) {
                 const pooTime = getTimestamp(lastPoo);
@@ -1537,10 +1737,18 @@
         function switchTab(tab) {
             document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            
+
             document.querySelector(`.tab-item:nth-child(${tab === 'log' ? 1 : tab === 'history' ? 2 : 3})`).classList.add('active');
             document.getElementById(`${tab}-view`).classList.add('active');
-            
+
+            // Show header hint only on Log tab
+            const headerHint = document.getElementById('header-hint');
+            if (tab === 'log') {
+                headerHint.style.display = 'block';
+            } else {
+                headerHint.style.display = 'none';
+            }
+
             if (tab === 'stats') {
                 updateCharts();
             }
@@ -1767,6 +1975,7 @@
         updateConnectionStatus(navigator.onLine);
         subscribeToEvents();
         setupMidnightCheck();
+        checkActiveSleep();
         
         // Update stats every minute
         setInterval(() => {
