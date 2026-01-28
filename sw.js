@@ -1,4 +1,4 @@
-const CACHE_NAME = 'leya-tracker-v6';
+const CACHE_NAME = 'leya-tracker-v7';
 const ASSETS = [
     '/',
     '/index.html',
