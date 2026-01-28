@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Leya Tracker">
+    <meta name="theme-color" content="#0f0f23">
+    <title>Leya Tracker</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(180deg, #16213e 0%, #0f0f23 100%);
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            color: #ffffff;
+        }
+
+        html {
+            height: -webkit-fill-available;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-top: calc(env(safe-area-inset-top, 20px) + 10px);
+            padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 100px);
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .header-left h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .header-left p {
+            color: rgba(255,255,255,0.5);
+            font-size: 13px;
+            margin-top: 2px;
+        }
+
+        .header-right {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .header-avatar {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+
+        .sync-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255,255,255,0.1);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .sync-status .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #34d399;
+        }
+
+        .sync-status .dot.offline {
+            background: #fbbf24;
+        }
+
+        .sync-status .dot.error {
+            background: #f87171;
+        }
+
+        /* Reminder Banner */
+        .reminder-banner {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 16px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .reminder-banner.hidden {
+            display: none;
+        }
+
+        .reminder-banner .emoji {
+            font-size: 28px;
+        }
+
+        .reminder-banner .text {
+            flex: 1;
+            color: #fbbf24;
+        }
+
+        .reminder-banner .title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .reminder-banner .subtitle {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        .reminder-banner .close-btn {
+            background: rgba(251, 191, 36, 0.2);
+            border: none;
+            color: #fbbf24;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        /* Stats Bar - 3 items */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 14px 10px;
+            text-align: center;
+        }
+
+        .stat-card .emoji {
+            font-size: 20px;
+            margin-bottom: 6px;
+        }
+
+        .stat-card .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .stat-card .value.warning {
+            color: #fbbf24;
+        }
+
+        .stat-card .value.alert {
+            color: #f87171;
+        }
+
+        .stat-card .label {
+            font-size: 10px;
+            color: rgba(255,255,255,0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        .section-label {
+            color: rgba(255,255,255,0.4);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 10px;
+            margin-top: 20px;
+            font-weight: 600;
+        }
+
+        /* Toilet buttons - 2x2 grid */
+        .toilet-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        /* Activity buttons - row */
+        .activity-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .event-btn {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 18px 12px;
+            font-size: 13px;
+            font-weight: 500;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            -webkit-user-select: none;
+            user-select: none;
+            position: relative;
+        }
+
+        .event-btn:active {
+            transform: scale(0.95);
+            background: rgba(255,255,255,0.1);
+        }
+
+        .event-btn:disabled {
+            opacity: 0.5;
+            transform: none;
+        }
+
+        .event-btn .emoji {
+            font-size: 32px;
+        }
+
+        .event-btn.pee { 
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(14, 165, 233, 0.1) 100%);
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+        .event-btn.poo { 
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+            border-color: rgba(251, 191, 36, 0.3);
+        }
+        .event-btn.meal { 
+            background: linear-gradient(135deg, rgba(251, 113, 133, 0.2) 0%, rgba(244, 63, 94, 0.1) 100%);
+            border-color: rgba(251, 113, 133, 0.3);
+        }
+        .event-btn.sleep { 
+            background: linear-gradient(135deg, rgba(167, 139, 250, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border-color: rgba(167, 139, 250, 0.3);
+        }
+        .event-btn.accident-pee { 
+            background: linear-gradient(135deg, rgba(248, 113, 113, 0.15) 0%, rgba(239, 68, 68, 0.1) 100%);
+            border-color: rgba(248, 113, 113, 0.3);
+        }
+        .event-btn.accident-poo { 
+            background: linear-gradient(135deg, rgba(251, 146, 60, 0.15) 0%, rgba(249, 115, 22, 0.1) 100%);
+            border-color: rgba(251, 146, 60, 0.3);
+        }
+
+        .section-title {
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            margin-top: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-card {
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 8px;
+            max-height: 350px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 14px 12px;
+            gap: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-radius: 14px;
+            margin-bottom: 4px;
+        }
+
+        .history-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .history-item:active {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .history-item .emoji {
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .history-item .details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .history-item .event-type {
+            font-weight: 600;
+            color: white;
+            font-size: 14px;
+        }
+
+        .history-item .time {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            margin-top: 2px;
+        }
+
+        .history-item .comment {
+            font-size: 12px;
+            color: #a78bfa;
+            margin-top: 4px;
+            font-style: italic;
+        }
+
+        .history-item .duration {
+            font-size: 11px;
+            color: #34d399;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px 20px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .empty-state .emoji {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(255,255,255,0.95);
+            color: #1a1a1a;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Bottom Tab Bar */
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 15, 35, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 20px;
+            padding-bottom: calc(env(safe-area-inset-bottom, 12px) + 12px);
+            z-index: 100;
+        }
+
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.4);
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .tab-item .icon {
+            font-size: 24px;
+        }
+
+        .tab-item.active {
+            color: #a78bfa;
+            background: rgba(167, 139, 250, 0.15);
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        .export-section {
+            margin-top: 20px;
+        }
+
+        .export-btn {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px dashed rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.6);
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .export-btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        .day-header {
+            font-size: 12px;
+            font-weight: 600;
+            color: #a78bfa;
+            padding: 12px 12px 8px 12px;
+            margin-top: 8px;
+            border-bottom: 1px solid rgba(167, 139, 250, 0.2);
+        }
+
+        .day-header:first-child {
+            margin-top: 0;
+        }
+
+        .day-stats {
+            font-weight: 400;
+            color: rgba(255,255,255,0.4);
+            float: right;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 20px;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: linear-gradient(180deg, #1e2a4a 0%, #16213e 100%);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 24px;
+            width: 100%;
+            max-width: 340px;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.show .modal {
+            transform: scale(1);
+        }
+
+        .modal h3 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+        }
+
+        .modal label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 8px;
+            margin-top: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .modal label:first-of-type {
+            margin-top: 0;
+        }
+
+        .modal input[type="datetime-local"],
+        .modal input[type="number"],
+        .modal textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 16px;
+            font-family: inherit;
+            color: white;
+        }
+
+        .modal textarea {
+            resize: none;
+            height: 80px;
+        }
+
+        .modal input:focus,
+        .modal textarea:focus {
+            outline: none;
+            border-color: #a78bfa;
+            background: rgba(167, 139, 250, 0.1);
+        }
+
+        .modal input::placeholder,
+        .modal textarea::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+
+        .modal input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .modal-btn.cancel {
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.7);
+        }
+
+        .modal-btn.save {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .modal-btn.delete {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(180deg, #16213e 0%, #0f0f23 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            color: white;
+        }
+
+        .loading-overlay.hidden {
+            display: none;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #a78bfa;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .duration-inputs {
+            display: flex;
+            gap: 12px;
+        }
+
+        .duration-inputs > div {
+            flex: 1;
+        }
+
+        .duration-inputs input {
+            text-align: center;
+        }
+
+        .duration-inputs .input-label {
+            text-align: center;
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+            margin-top: 6px;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        /* Stats View */
+        .stats-section {
+            margin-bottom: 24px;
+        }
+
+        .stats-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .chart-container {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .chart-container canvas {
+            max-height: 200px;
+        }
+
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .summary-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .summary-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .summary-card .label {
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+
+        .summary-card.accidents .value {
+            color: #f87171;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div>Connecting...</div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <h1>Leya</h1>
+                <p>Tap to log • Hold to edit time</p>
+            </div>
+            <div class="header-right">
+                <div class="header-avatar">🐕</div>
+                <div class="sync-status">
+                    <span class="dot" id="sync-dot"></span>
+                    <span id="sync-text">Synced</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Reminder Banner -->
+        <div class="reminder-banner hidden" id="reminder-banner">
+            <span class="emoji" id="reminder-emoji">💧</span>
+            <div class="text">
+                <div class="title" id="reminder-title">Time for a potty break?</div>
+                <div class="subtitle" id="reminder-subtitle">It's been a while since the last pee</div>
+            </div>
+            <button class="close-btn" onclick="dismissReminder()">×</button>
+        </div>
+
+        <!-- Log View -->
+        <div id="log-view" class="view active">
+            <div class="stats-bar">
+                <div class="stat-card">
+                    <div class="emoji">💧</div>
+                    <div class="value" id="last-pee">--</div>
+                    <div class="label">Last Pee</div>
+                </div>
+                <div class="stat-card">
+                    <div class="emoji">💩</div>
+                    <div class="value" id="last-poo">--</div>
+                    <div class="label">Last Poo</div>
+                </div>
+                <div class="stat-card">
+                    <div class="emoji">😴</div>
+                    <div class="value" id="sleep-today">0h</div>
+                    <div class="label">Sleep</div>
+                </div>
+            </div>
+
+            <div class="section-label">Toilet</div>
+            <div class="toilet-grid">
+                <button class="event-btn pee" data-event="pee">
+                    <span class="emoji">💧</span>
+                    <span>Pee</span>
+                </button>
+                <button class="event-btn poo" data-event="poo">
+                    <span class="emoji">💩</span>
+                    <span>Poo</span>
+                </button>
+                <button class="event-btn accident-pee" data-event="accident-pee">
+                    <span class="emoji">💧🏠</span>
+                    <span>Pee Accident</span>
+                </button>
+                <button class="event-btn accident-poo" data-event="accident-poo">
+                    <span class="emoji">💩🏠</span>
+                    <span>Poo Accident</span>
+                </button>
+            </div>
+
+            <div class="section-label">Daily Activities</div>
+            <div class="activity-row">
+                <button class="event-btn meal" data-event="meal">
+                    <span class="emoji">🍖</span>
+                    <span>Meal</span>
+                </button>
+                <button class="event-btn sleep" onclick="openManualSleepModal()">
+                    <span class="emoji">😴</span>
+                    <span>Add Sleep</span>
+                </button>
+            </div>
+
+            <div class="section-title">
+                <span>Today's Activity</span>
+            </div>
+            <div class="history-card">
+                <div id="recent-list"></div>
+            </div>
+        </div>
+
+        <!-- History View -->
+        <div id="history-view" class="view">
+            <div class="section-title">
+                <span>Full History</span>
+            </div>
+            <div class="history-card" style="max-height: 500px;">
+                <div id="full-history"></div>
+            </div>
+
+            <div class="export-section">
+                <button class="export-btn" onclick="exportData()">
+                    📤 Export Data as CSV
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats View -->
+        <div id="stats-view" class="view">
+            <div class="stats-section">
+                <div class="stats-section-title">Sleep (Last 7 Days)</div>
+                <div class="chart-container">
+                    <canvas id="sleepChart"></canvas>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <div class="stats-section-title">Accidents (Last 7 Days)</div>
+                <div class="chart-container">
+                    <canvas id="accidentsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <div class="stats-section-title">Weekly Summary</div>
+                <div class="stats-summary">
+                    <div class="summary-card">
+                        <div class="value" id="total-pee">0</div>
+                        <div class="label">Total Pee</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="value" id="total-poo">0</div>
+                        <div class="label">Total Poo</div>
+                    </div>
+                    <div class="summary-card accidents">
+                        <div class="value" id="total-accidents">0</div>
+                        <div class="label">Accidents</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="value" id="avg-sleep">0h</div>
+                        <div class="label">Avg Sleep</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Tab Bar -->
+    <div class="tab-bar">
+        <button class="tab-item active" onclick="switchTab('log')">
+            <span class="icon">📝</span>
+            <span>Log</span>
+        </button>
+        <button class="tab-item" onclick="switchTab('history')">
+            <span class="icon">📋</span>
+            <span>History</span>
+        </button>
+        <button class="tab-item" onclick="switchTab('stats')">
+            <span class="icon">📊</span>
+            <span>Stats</span>
+        </button>
+    </div>
+
+    <!-- New Event Modal (for long press - now includes timestamp) -->
+    <div class="modal-overlay" id="new-event-modal">
+        <div class="modal">
+            <h3><span id="new-modal-emoji">🐕</span> <span id="new-modal-title">Add Event</span></h3>
+            <label>Date & Time</label>
+            <input type="datetime-local" id="new-timestamp">
+            <label>Comment (optional)</label>
+            <textarea id="new-comment-input" placeholder="Add a note..."></textarea>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeNewEventModal()">Cancel</button>
+                <button class="modal-btn save" onclick="saveNewEvent()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Event Modal -->
+    <div class="modal-overlay" id="edit-modal">
+        <div class="modal">
+            <h3><span id="edit-modal-emoji">🐕</span> Edit <span id="edit-modal-title">Event</span></h3>
+            <label>Date & Time</label>
+            <input type="datetime-local" id="edit-timestamp">
+            <label>Comment</label>
+            <textarea id="edit-comment" placeholder="Add a note..."></textarea>
+            <div class="modal-buttons">
+                <button class="modal-btn delete" onclick="confirmDeleteEvent()">Delete</button>
+                <button class="modal-btn cancel" onclick="closeEditModal()">Cancel</button>
+                <button class="modal-btn save" onclick="saveEventEdit()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Sleep Modal -->
+    <div class="modal-overlay" id="manual-sleep-modal">
+        <div class="modal">
+            <h3>😴 Add Sleep</h3>
+            <label>When did the sleep end?</label>
+            <input type="datetime-local" id="sleep-end-time">
+            <label>Duration</label>
+            <div class="duration-inputs">
+                <div>
+                    <input type="number" id="sleep-hours" min="0" max="23" placeholder="0">
+                    <div class="input-label">Hours</div>
+                </div>
+                <div>
+                    <input type="number" id="sleep-minutes" min="0" max="59" placeholder="0">
+                    <div class="input-label">Minutes</div>
+                </div>
+            </div>
+            <label>Comment (optional)</label>
+            <textarea id="sleep-comment" placeholder="Add a note..."></textarea>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeManualSleepModal()">Cancel</button>
+                <button class="modal-btn save" onclick="saveManualSleep()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal">
+            <h3>🗑️ Delete Event?</h3>
+            <p style="color: rgba(255,255,255,0.6); margin-bottom: 20px;">Are you sure you want to delete this event? This cannot be undone.</p>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeDeleteModal()">Cancel</button>
+                <button class="modal-btn delete" onclick="executeDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB1Mt-OrQ1x9vzSM-nq1hOldyDDHJ2ttHY",
+            authDomain: "leya-tracker.firebaseapp.com",
+            projectId: "leya-tracker",
+            storageBucket: "leya-tracker.firebasestorage.app",
+            messagingSenderId: "109341389780",
+            appId: "1:109341389780:web:df46a8e139515f09831c41",
+            measurementId: "G-8PKSZVTK7M"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Enable offline persistence
+        db.enablePersistence().catch((err) => {
+            console.log('Persistence error:', err.code);
+        });
+
+        // Reminder settings (in minutes)
+        const REMINDER_THRESHOLD_PEE = 90;
+        const REMINDER_THRESHOLD_POO = 240;
+        let reminderDismissed = false;
+
+        const EVENT_CONFIG = {
+            'pee': { emoji: '💧', label: 'Pee' },
+            'poo': { emoji: '💩', label: 'Poo' },
+            'meal': { emoji: '🍖', label: 'Meal' },
+            'sleep': { emoji: '😴', label: 'Sleep' },
+            'accident-pee': { emoji: '💧🏠', label: 'Pee Accident' },
+            'accident-poo': { emoji: '💩🏠', label: 'Poo Accident' }
+        };
+
+        let events = [];
+        let pendingEvent = null;
+        let editingEvent = null;
+        let eventToDelete = null;
+        let longPressTimer = null;
+        let midnightCheckInterval = null;
+        let isOnline = navigator.onLine;
+        let sleepChart = null;
+        let accidentsChart = null;
+
+        // Connection status
+        function updateConnectionStatus(online) {
+            isOnline = online;
+            const dot = document.getElementById('sync-dot');
+            const text = document.getElementById('sync-text');
+            
+            if (online) {
+                dot.className = 'dot';
+                text.textContent = 'Synced';
+            } else {
+                dot.className = 'dot offline';
+                text.textContent = 'Offline';
+            }
+        }
+
+        window.addEventListener('online', () => updateConnectionStatus(true));
+        window.addEventListener('offline', () => updateConnectionStatus(false));
+
+        // Listen to Firestore changes in real-time
+        function subscribeToEvents() {
+            db.collection('events')
+                .orderBy('timestamp', 'desc')
+                .limit(500)
+                .onSnapshot((snapshot) => {
+                    events = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    updateUI();
+                    checkReminders();
+                    updateCharts();
+                    document.getElementById('loading-overlay').classList.add('hidden');
+                }, (error) => {
+                    console.error('Firestore error:', error);
+                    document.getElementById('sync-dot').className = 'dot error';
+                    document.getElementById('sync-text').textContent = 'Error';
+                    document.getElementById('loading-overlay').classList.add('hidden');
+                });
+        }
+
+        // Check and show reminders
+        function checkReminders() {
+            if (reminderDismissed) return;
+
+            const now = new Date();
+            const lastPee = events.find(e => e.type === 'pee');
+            const lastPoo = events.find(e => e.type === 'poo');
+
+            let showReminder = false;
+            let reminderType = '';
+            let minutesSince = 0;
+
+            if (lastPee) {
+                const peeTime = getTimestamp(lastPee);
+                const minsSincePee = Math.floor((now - peeTime) / 60000);
+                if (minsSincePee >= REMINDER_THRESHOLD_PEE) {
+                    showReminder = true;
+                    reminderType = 'pee';
+                    minutesSince = minsSincePee;
+                }
+            }
+
+            if (lastPoo) {
+                const pooTime = getTimestamp(lastPoo);
+                const minsSincePoo = Math.floor((now - pooTime) / 60000);
+                if (minsSincePoo >= REMINDER_THRESHOLD_POO) {
+                    if (!showReminder || minsSincePoo > minutesSince) {
+                        showReminder = true;
+                        reminderType = 'poo';
+                        minutesSince = minsSincePoo;
+                    }
+                }
+            }
+
+            const banner = document.getElementById('reminder-banner');
+            if (showReminder) {
+                const hours = Math.floor(minutesSince / 60);
+                const mins = minutesSince % 60;
+                const timeText = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+                document.getElementById('reminder-emoji').textContent = reminderType === 'pee' ? '💧' : '💩';
+                document.getElementById('reminder-title').textContent = 'Time for a potty break?';
+                document.getElementById('reminder-subtitle').textContent = 
+                    `It's been ${timeText} since the last ${reminderType}`;
+                banner.classList.remove('hidden');
+            } else {
+                banner.classList.add('hidden');
+            }
+        }
+
+        function dismissReminder() {
+            document.getElementById('reminder-banner').classList.add('hidden');
+            reminderDismissed = true;
+            setTimeout(() => { reminderDismissed = false; }, 30 * 60 * 1000);
+        }
+
+        // Set up event buttons (excluding sleep button which has onclick)
+        document.querySelectorAll('.event-btn[data-event]').forEach(btn => {
+            const eventType = btn.dataset.event;
+            
+            btn.addEventListener('click', (e) => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                logEvent(eventType);
+            });
+
+            btn.addEventListener('touchstart', (e) => {
+                longPressTimer = setTimeout(() => {
+                    e.preventDefault();
+                    openNewEventModal(eventType);
+                    longPressTimer = null;
+                }, 500);
+            }, { passive: true });
+
+            btn.addEventListener('touchend', () => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            });
+
+            btn.addEventListener('touchmove', () => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            });
+
+            btn.addEventListener('mousedown', (e) => {
+                longPressTimer = setTimeout(() => {
+                    e.preventDefault();
+                    openNewEventModal(eventType);
+                    longPressTimer = null;
+                }, 500);
+            });
+
+            btn.addEventListener('mouseup', () => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            });
+
+            btn.addEventListener('mouseleave', () => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            });
+        });
+
+        // New Event Modal (for long press - now includes timestamp)
+        function openNewEventModal(eventType) {
+            pendingEvent = eventType;
+            const config = EVENT_CONFIG[eventType];
+            document.getElementById('new-modal-emoji').textContent = config.emoji;
+            document.getElementById('new-modal-title').textContent = config.label;
+            
+            // Set current time as default
+            const now = new Date();
+            const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+                .toISOString().slice(0, 16);
+            document.getElementById('new-timestamp').value = localDateTime;
+            document.getElementById('new-comment-input').value = '';
+            
+            document.getElementById('new-event-modal').classList.add('show');
+        }
+
+        function closeNewEventModal() {
+            document.getElementById('new-event-modal').classList.remove('show');
+            pendingEvent = null;
+        }
+
+        function saveNewEvent() {
+            const timestamp = new Date(document.getElementById('new-timestamp').value);
+            const comment = document.getElementById('new-comment-input').value.trim();
+            if (pendingEvent) {
+                logEventWithTimestamp(pendingEvent, timestamp, comment);
+            }
+            closeNewEventModal();
+        }
+
+        // Edit Modal
+        function openEditModal(eventId) {
+            const event = events.find(e => e.id === eventId);
+            if (!event) return;
+
+            editingEvent = event;
+            const config = EVENT_CONFIG[event.type] || { emoji: '📝', label: 'Event' };
+            
+            document.getElementById('edit-modal-emoji').textContent = config.emoji;
+            document.getElementById('edit-modal-title').textContent = config.label;
+            
+            const timestamp = getTimestamp(event);
+            const localDateTime = new Date(timestamp.getTime() - timestamp.getTimezoneOffset() * 60000)
+                .toISOString().slice(0, 16);
+            document.getElementById('edit-timestamp').value = localDateTime;
+            document.getElementById('edit-comment').value = event.comment || '';
+            
+            document.getElementById('edit-modal').classList.add('show');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.remove('show');
+            editingEvent = null;
+        }
+
+        async function saveEventEdit() {
+            if (!editingEvent) return;
+
+            const newTimestamp = new Date(document.getElementById('edit-timestamp').value);
+            const newComment = document.getElementById('edit-comment').value.trim();
+
+            try {
+                await db.collection('events').doc(editingEvent.id).update({
+                    timestamp: firebase.firestore.Timestamp.fromDate(newTimestamp),
+                    comment: newComment
+                });
+                showToast('Event updated');
+                closeEditModal();
+            } catch (error) {
+                console.error('Error updating event:', error);
+                showToast('Error updating event');
+            }
+        }
+
+        function confirmDeleteEvent() {
+            if (!editingEvent) return;
+            eventToDelete = editingEvent.id;
+            document.getElementById('delete-modal').classList.add('show');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('delete-modal').classList.remove('show');
+            eventToDelete = null;
+        }
+
+        async function executeDelete() {
+            if (!eventToDelete) return;
+
+            try {
+                await db.collection('events').doc(eventToDelete).delete();
+                showToast('Event deleted');
+                closeDeleteModal();
+                closeEditModal();
+            } catch (error) {
+                console.error('Error deleting event:', error);
+                showToast('Error deleting');
+            }
+        }
+
+        // Manual Sleep Modal
+        function openManualSleepModal() {
+            const now = new Date();
+            const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+                .toISOString().slice(0, 16);
+            document.getElementById('sleep-end-time').value = localDateTime;
+            document.getElementById('sleep-hours').value = '';
+            document.getElementById('sleep-minutes').value = '';
+            document.getElementById('sleep-comment').value = '';
+            document.getElementById('manual-sleep-modal').classList.add('show');
+        }
+
+        function closeManualSleepModal() {
+            document.getElementById('manual-sleep-modal').classList.remove('show');
+        }
+
+        async function saveManualSleep() {
+            const endTimeInput = document.getElementById('sleep-end-time').value;
+            const hours = parseInt(document.getElementById('sleep-hours').value) || 0;
+            const minutes = parseInt(document.getElementById('sleep-minutes').value) || 0;
+            const comment = document.getElementById('sleep-comment').value.trim();
+
+            if (hours === 0 && minutes === 0) {
+                showToast('Please enter a duration');
+                return;
+            }
+
+            const endTime = new Date(endTimeInput);
+            const durationMs = (hours * 60 + minutes) * 60 * 1000;
+            const startTime = new Date(endTime.getTime() - durationMs);
+
+            try {
+                await db.collection('events').add({
+                    type: 'sleep',
+                    timestamp: firebase.firestore.Timestamp.fromDate(endTime),
+                    sleepStart: firebase.firestore.Timestamp.fromDate(startTime),
+                    sleepEnd: firebase.firestore.Timestamp.fromDate(endTime),
+                    sleepDuration: durationMs,
+                    comment: comment,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                showToast(`😴 ${hours}h ${minutes}m sleep logged!`);
+                closeManualSleepModal();
+            } catch (error) {
+                console.error('Error adding manual sleep:', error);
+                showToast('Error saving sleep');
+            }
+        }
+
+        async function logEvent(type, comment = '') {
+            const now = new Date();
+            await logEventWithTimestamp(type, now, comment);
+        }
+
+        async function logEventWithTimestamp(type, timestamp, comment = '') {
+            const event = {
+                type: type,
+                timestamp: firebase.firestore.Timestamp.fromDate(timestamp),
+                comment: comment,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            // Reset reminder when logging pee/poo
+            if (type === 'pee' || type === 'poo') {
+                reminderDismissed = false;
+            }
+
+            try {
+                await db.collection('events').add(event);
+                showToast(`${EVENT_CONFIG[type].emoji} ${EVENT_CONFIG[type].label} logged!`);
+            } catch (error) {
+                console.error('Error adding event:', error);
+                showToast('Error saving - will sync when online');
+            }
+        }
+
+        function getTimestamp(event) {
+            if (event.timestamp && event.timestamp.toDate) {
+                return event.timestamp.toDate();
+            }
+            return new Date(event.timestamp);
+        }
+
+        function formatTime(timestamp) {
+            const date = timestamp instanceof Date ? timestamp : getTimestamp({ timestamp });
+            return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+
+        function formatDate(event) {
+            const date = getTimestamp(event);
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            if (date.toDateString() === today.toDateString()) {
+                return 'Today';
+            } else if (date.toDateString() === yesterday.toDateString()) {
+                return 'Yesterday';
+            } else {
+                return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            }
+        }
+
+        function formatTimeAgo(event) {
+            const date = getTimestamp(event);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMins / 60);
+
+            if (diffMins < 1) return 'now';
+            if (diffMins < 60) return `${diffMins}m`;
+            if (diffHours < 24) return `${diffHours}h`;
+            return formatDate(event);
+        }
+
+        function formatDuration(ms) {
+            const hours = Math.floor(ms / 3600000);
+            const minutes = Math.floor((ms % 3600000) / 60000);
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            }
+            return `${minutes}m`;
+        }
+
+        function renderEventItem(event) {
+            const config = EVENT_CONFIG[event.type];
+            if (!config) return '';
+            
+            let durationHtml = '';
+            if (event.type === 'sleep' && event.sleepDuration) {
+                durationHtml = `<div class="duration">⏱ ${formatDuration(event.sleepDuration)}</div>`;
+            }
+            let commentHtml = '';
+            if (event.comment) {
+                commentHtml = `<div class="comment">"${event.comment}"</div>`;
+            }
+            
+            const timestamp = getTimestamp(event);
+            
+            return `
+                <div class="history-item" onclick="openEditModal('${event.id}')">
+                    <span class="emoji">${config.emoji}</span>
+                    <div class="details">
+                        <div class="event-type">${config.label}</div>
+                        <div class="time">${formatTime(timestamp)} · ${formatTimeAgo(event)}</div>
+                        ${durationHtml}
+                        ${commentHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getDaySleepTotal(dateString) {
+            // Count sleep that ENDED on this day (sleepEnd date matches)
+            const dayEvents = events.filter(e => {
+                if (e.type !== 'sleep' || !e.sleepDuration) return false;
+                // Use sleepEnd if available, otherwise use timestamp
+                const endDate = e.sleepEnd ? 
+                    (e.sleepEnd.toDate ? e.sleepEnd.toDate() : new Date(e.sleepEnd)) :
+                    getTimestamp(e);
+                return endDate.toDateString() === dateString;
+            });
+            const totalMs = dayEvents.reduce((sum, e) => sum + e.sleepDuration, 0);
+            return totalMs;
+        }
+
+        function getTodayString() {
+            return new Date().toDateString();
+        }
+
+        function updateUI() {
+            const today = getTodayString();
+            
+            // Recent list - all today's activities
+            const recentList = document.getElementById('recent-list');
+            const todayEvents = events.filter(e => getTimestamp(e).toDateString() === today);
+            if (todayEvents.length === 0) {
+                recentList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="emoji">🐾</div>
+                        <p>No activities logged today.<br>Tap a button to start!</p>
+                    </div>
+                `;
+            } else {
+                recentList.innerHTML = todayEvents.map(e => renderEventItem(e)).join('');
+            }
+
+            // Full history grouped by day
+            const fullHistory = document.getElementById('full-history');
+            if (events.length === 0) {
+                fullHistory.innerHTML = `
+                    <div class="empty-state">
+                        <div class="emoji">📭</div>
+                        <p>No history yet</p>
+                    </div>
+                `;
+            } else {
+                let html = '';
+                let currentDay = '';
+                events.forEach(event => {
+                    const eventDate = getTimestamp(event);
+                    const day = formatDate(event);
+                    if (day !== currentDay) {
+                        currentDay = day;
+                        const daySleepMs = getDaySleepTotal(eventDate.toDateString());
+                        const sleepText = daySleepMs > 0 ? `😴 ${formatDuration(daySleepMs)}` : '';
+                        html += `<div class="day-header">${day} <span class="day-stats">${sleepText}</span></div>`;
+                    }
+                    html += renderEventItem(event);
+                });
+                fullHistory.innerHTML = html;
+            }
+
+            updateStats();
+        }
+
+        function updateStats() {
+            const today = getTodayString();
+
+            // Last pee (with color coding)
+            const lastPee = events.find(e => e.type === 'pee');
+            const lastPeeEl = document.getElementById('last-pee');
+            if (lastPee) {
+                const peeTime = getTimestamp(lastPee);
+                const minsSince = Math.floor((new Date() - peeTime) / 60000);
+                lastPeeEl.textContent = formatTimeAgo(lastPee);
+                lastPeeEl.className = 'value';
+                if (minsSince >= REMINDER_THRESHOLD_PEE * 1.5) {
+                    lastPeeEl.classList.add('alert');
+                } else if (minsSince >= REMINDER_THRESHOLD_PEE) {
+                    lastPeeEl.classList.add('warning');
+                }
+            } else {
+                lastPeeEl.textContent = '--';
+                lastPeeEl.className = 'value';
+            }
+
+            // Last poo (with color coding)
+            const lastPoo = events.find(e => e.type === 'poo');
+            const lastPooEl = document.getElementById('last-poo');
+            if (lastPoo) {
+                const pooTime = getTimestamp(lastPoo);
+                const minsSince = Math.floor((new Date() - pooTime) / 60000);
+                lastPooEl.textContent = formatTimeAgo(lastPoo);
+                lastPooEl.className = 'value';
+                if (minsSince >= REMINDER_THRESHOLD_POO * 1.5) {
+                    lastPooEl.classList.add('alert');
+                } else if (minsSince >= REMINDER_THRESHOLD_POO) {
+                    lastPooEl.classList.add('warning');
+                }
+            } else {
+                lastPooEl.textContent = '--';
+                lastPooEl.className = 'value';
+            }
+
+            // Sleep today
+            const sleepTodayMs = getDaySleepTotal(today);
+            const hours = Math.floor(sleepTodayMs / 3600000);
+            const mins = Math.floor((sleepTodayMs % 3600000) / 60000);
+            document.getElementById('sleep-today').textContent = hours > 0 ? `${hours}h` : `${mins}m`;
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            
+            document.querySelector(`.tab-item:nth-child(${tab === 'log' ? 1 : tab === 'history' ? 2 : 3})`).classList.add('active');
+            document.getElementById(`${tab}-view`).classList.add('active');
+            
+            if (tab === 'stats') {
+                updateCharts();
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        function exportData() {
+            if (events.length === 0) {
+                showToast('No data to export');
+                return;
+            }
+
+            const headers = ['Date', 'Time', 'Event Type', 'Duration (minutes)', 'Comment'];
+            const rows = events.map(e => {
+                const date = getTimestamp(e);
+                const duration = e.sleepDuration ? Math.round(e.sleepDuration / 60000) : '';
+                const comment = e.comment ? `"${e.comment.replace(/"/g, '""')}"` : '';
+                return [
+                    date.toLocaleDateString(),
+                    date.toLocaleTimeString(),
+                    EVENT_CONFIG[e.type]?.label || e.type,
+                    duration,
+                    comment
+                ].join(',');
+            });
+
+            const csv = [headers.join(','), ...rows].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `leya-tracker-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            
+            URL.revokeObjectURL(url);
+            showToast('Data exported!');
+        }
+
+        // Charts
+        function getLast7Days() {
+            const days = [];
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                days.push(date);
+            }
+            return days;
+        }
+
+        function updateCharts() {
+            const last7Days = getLast7Days();
+            const labels = last7Days.map(d => d.toLocaleDateString('en-US', { weekday: 'short' }));
+            
+            // Sleep data
+            const sleepData = last7Days.map(day => {
+                const sleepMs = getDaySleepTotal(day.toDateString());
+                return Math.round(sleepMs / 3600000 * 10) / 10; // Hours with 1 decimal
+            });
+
+            // Accidents data
+            const accidentsPeeData = last7Days.map(day => {
+                return events.filter(e => 
+                    e.type === 'accident-pee' && 
+                    getTimestamp(e).toDateString() === day.toDateString()
+                ).length;
+            });
+            
+            const accidentsPooData = last7Days.map(day => {
+                return events.filter(e => 
+                    e.type === 'accident-poo' && 
+                    getTimestamp(e).toDateString() === day.toDateString()
+                ).length;
+            });
+
+            // Update or create sleep chart
+            const sleepCtx = document.getElementById('sleepChart').getContext('2d');
+            if (sleepChart) {
+                sleepChart.data.labels = labels;
+                sleepChart.data.datasets[0].data = sleepData;
+                sleepChart.update();
+            } else {
+                sleepChart = new Chart(sleepCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Hours',
+                            data: sleepData,
+                            backgroundColor: 'rgba(167, 139, 250, 0.6)',
+                            borderColor: 'rgba(167, 139, 250, 1)',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(255,255,255,0.05)' },
+                                ticks: { color: 'rgba(255,255,255,0.5)' }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: 'rgba(255,255,255,0.5)' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Update or create accidents chart
+            const accidentsCtx = document.getElementById('accidentsChart').getContext('2d');
+            if (accidentsChart) {
+                accidentsChart.data.labels = labels;
+                accidentsChart.data.datasets[0].data = accidentsPeeData;
+                accidentsChart.data.datasets[1].data = accidentsPooData;
+                accidentsChart.update();
+            } else {
+                accidentsChart = new Chart(accidentsCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Pee',
+                            data: accidentsPeeData,
+                            backgroundColor: 'rgba(56, 189, 248, 0.6)',
+                            borderColor: 'rgba(56, 189, 248, 1)',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        }, {
+                            label: 'Poo',
+                            data: accidentsPooData,
+                            backgroundColor: 'rgba(251, 146, 60, 0.6)',
+                            borderColor: 'rgba(251, 146, 60, 1)',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: { color: 'rgba(255,255,255,0.6)', boxWidth: 12 }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(255,255,255,0.05)' },
+                                ticks: { 
+                                    color: 'rgba(255,255,255,0.5)',
+                                    stepSize: 1
+                                }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: 'rgba(255,255,255,0.5)' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Update summary stats
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            
+            const weekEvents = events.filter(e => getTimestamp(e) >= sevenDaysAgo);
+            
+            document.getElementById('total-pee').textContent = weekEvents.filter(e => e.type === 'pee').length;
+            document.getElementById('total-poo').textContent = weekEvents.filter(e => e.type === 'poo').length;
+            document.getElementById('total-accidents').textContent = weekEvents.filter(e => 
+                e.type === 'accident-pee' || e.type === 'accident-poo'
+            ).length;
+            
+            const totalSleepMs = sleepData.reduce((a, b) => a + b, 0) * 3600000;
+            const avgSleepHours = Math.round(totalSleepMs / 7 / 3600000 * 10) / 10;
+            document.getElementById('avg-sleep').textContent = `${avgSleepHours}h`;
+        }
+
+        // Close modals on outside click
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.classList.remove('show');
+                }
+            });
+        });
+
+        // Check for midnight to reset "today" counters
+        function setupMidnightCheck() {
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+            const msUntilMidnight = tomorrow - now;
+
+            setTimeout(() => {
+                updateStats();
+                reminderDismissed = false;
+                midnightCheckInterval = setInterval(() => {
+                    updateStats();
+                    reminderDismissed = false;
+                }, 24 * 60 * 60 * 1000);
+            }, msUntilMidnight);
+        }
+
+        // Initialize
+        updateConnectionStatus(navigator.onLine);
+        subscribeToEvents();
+        setupMidnightCheck();
+        
+        // Update stats every minute
+        setInterval(() => {
+            updateStats();
+            checkReminders();
+        }, 60000);
+
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('Service Worker registered'))
+                .catch(err => console.log('Service Worker registration failed:', err));
+        }
+    </script>
+</body>
+</html>
