@@ -1948,7 +1948,7 @@
                 ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
 
                 activityPatternSleepData.forEach(period => {
-                    const x = scales.x.getPixelForValue(period.dayIndex);
+                    const x = scales.x.getPixelForValue(period.dayLabel);
                     const yStart = scales.y.getPixelForValue(period.startHour);
                     const yEnd = scales.y.getPixelForValue(period.endHour);
                     const barWidth = (chartArea.right - chartArea.left) / 7 * 0.8;
@@ -1973,13 +1973,25 @@
             const mealsData = [];
             activityPatternSleepData = [];
 
+            // Debug: log what days we're processing
+            console.log('Activity Pattern Chart - Processing days:', labels);
+            console.log('Total events to process:', events.length);
+
             // Process events for the last 7 days
             events.forEach(e => {
-                const dayIndex = getDayIndex(getTimestamp(e), last7Days);
+                const timestamp = getTimestamp(e);
+                const dayIndex = getDayIndex(timestamp, last7Days);
+
+                // Debug: log events being processed
+                if (e.type !== 'sleep') {
+                    console.log(`Event: ${e.type} at ${timestamp.toLocaleString()}, dayIndex: ${dayIndex}`);
+                }
+
                 if (dayIndex === -1) return;
 
-                const hour = getDecimalHour(getTimestamp(e));
-                const point = { x: dayIndex, y: hour };
+                const hour = getDecimalHour(timestamp);
+                // Use the label string instead of numeric index for category x-axis
+                const point = { x: labels[dayIndex], y: hour };
 
                 switch (e.type) {
                     case 'poo':
@@ -2009,7 +2021,7 @@
                                 const startDayIndex = getDayIndex(e.sleepStart, last7Days);
                                 if (startDayIndex !== -1) {
                                     activityPatternSleepData.push({
-                                        dayIndex: startDayIndex,
+                                        dayLabel: labels[startDayIndex],
                                         startHour: getDecimalHour(e.sleepStart),
                                         endHour: 24
                                     });
@@ -2018,7 +2030,7 @@
                                 const endDayIndex = getDayIndex(e.sleepEnd, last7Days);
                                 if (endDayIndex !== -1) {
                                     activityPatternSleepData.push({
-                                        dayIndex: endDayIndex,
+                                        dayLabel: labels[endDayIndex],
                                         startHour: 0,
                                         endHour: getDecimalHour(e.sleepEnd)
                                     });
@@ -2028,7 +2040,7 @@
                                 const sleepDayIndex = getDayIndex(e.sleepStart, last7Days);
                                 if (sleepDayIndex !== -1) {
                                     activityPatternSleepData.push({
-                                        dayIndex: sleepDayIndex,
+                                        dayLabel: labels[sleepDayIndex],
                                         startHour: getDecimalHour(e.sleepStart),
                                         endHour: getDecimalHour(e.sleepEnd)
                                     });
@@ -2038,6 +2050,19 @@
                         break;
                 }
             });
+
+            // Debug: log processed data counts
+            console.log('Processed data counts:', {
+                poop: poopData.length,
+                poopAccident: poopAccidentData.length,
+                pee: peeData.length,
+                peeAccident: peeAccidentData.length,
+                meals: mealsData.length,
+                sleep: activityPatternSleepData.length
+            });
+            console.log('Poop data points:', poopData);
+            console.log('Pee data points:', peeData);
+            console.log('Meals data points:', mealsData);
 
             const ctx = document.getElementById('activityPatternChart').getContext('2d');
 
@@ -2165,8 +2190,12 @@
             };
 
             if (activityPatternChart) {
-                // Update existing chart
-                activityPatternChart.data.datasets = datasets;
+                // Update existing chart - update each dataset's data individually
+                activityPatternChart.data.datasets[0].data = poopData;
+                activityPatternChart.data.datasets[1].data = poopAccidentData;
+                activityPatternChart.data.datasets[2].data = peeData;
+                activityPatternChart.data.datasets[3].data = peeAccidentData;
+                activityPatternChart.data.datasets[4].data = mealsData;
                 activityPatternChart.options.scales.x.labels = labels;
                 activityPatternChart.update();
             } else {
