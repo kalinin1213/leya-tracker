@@ -713,11 +713,11 @@
         }
 
         .activity-pattern-chart-container {
-            height: 350px;
+            height: 525px;
         }
 
         .activity-pattern-chart-container canvas {
-            max-height: 350px;
+            max-height: 525px;
         }
 
         .chart-note {
@@ -1015,7 +1015,7 @@
                 <div class="chart-container activity-pattern-chart-container">
                     <canvas id="activityPatternChart"></canvas>
                 </div>
-                <p class="chart-note">White borders indicate accidents</p>
+                <p class="chart-note">White borders = accidents · Half brown/yellow = pee + poop together</p>
             </div>
         </div>
     </div>
@@ -2051,25 +2051,86 @@
                 }
             });
 
+            // Find overlapping pee and poop events (within 10 minutes of each other)
+            const combinedPeePoopData = [];
+            const TIME_THRESHOLD = 10 / 60; // 10 minutes in decimal hours
+
+            // Check each poop event against pee events for overlap
+            const peeToRemove = new Set();
+            const poopToRemove = new Set();
+
+            poopData.forEach((poopPoint, poopIdx) => {
+                peeData.forEach((peePoint, peeIdx) => {
+                    if (poopPoint.x === peePoint.x &&
+                        Math.abs(poopPoint.y - peePoint.y) <= TIME_THRESHOLD &&
+                        !peeToRemove.has(peeIdx) && !poopToRemove.has(poopIdx)) {
+                        // Found overlapping events - create combined point
+                        combinedPeePoopData.push({
+                            x: poopPoint.x,
+                            y: (poopPoint.y + peePoint.y) / 2 // Average position
+                        });
+                        peeToRemove.add(peeIdx);
+                        poopToRemove.add(poopIdx);
+                    }
+                });
+            });
+
+            // Remove overlapping points from individual arrays
+            const filteredPoopData = poopData.filter((_, idx) => !poopToRemove.has(idx));
+            const filteredPeeData = peeData.filter((_, idx) => !peeToRemove.has(idx));
+
             // Debug: log processed data counts
             console.log('Processed data counts:', {
-                poop: poopData.length,
+                poop: filteredPoopData.length,
                 poopAccident: poopAccidentData.length,
-                pee: peeData.length,
+                pee: filteredPeeData.length,
                 peeAccident: peeAccidentData.length,
                 meals: mealsData.length,
-                sleep: activityPatternSleepData.length
+                sleep: activityPatternSleepData.length,
+                combined: combinedPeePoopData.length
             });
-            console.log('Poop data points:', poopData);
-            console.log('Pee data points:', peeData);
-            console.log('Meals data points:', mealsData);
 
             const ctx = document.getElementById('activityPatternChart').getContext('2d');
+
+            // Create half-and-half point style for combined pee/poop events
+            const createHalfAndHalfPoint = () => {
+                const canvas = document.createElement('canvas');
+                const size = 20;
+                canvas.width = size;
+                canvas.height = size;
+                const ctx2 = canvas.getContext('2d');
+                const radius = size / 2 - 1;
+                const centerX = size / 2;
+                const centerY = size / 2;
+
+                // Draw left half (brown - poop)
+                ctx2.beginPath();
+                ctx2.arc(centerX, centerY, radius, Math.PI * 0.5, Math.PI * 1.5);
+                ctx2.fillStyle = '#a16207';
+                ctx2.fill();
+
+                // Draw right half (yellow - pee)
+                ctx2.beginPath();
+                ctx2.arc(centerX, centerY, radius, Math.PI * 1.5, Math.PI * 0.5);
+                ctx2.fillStyle = '#eab308';
+                ctx2.fill();
+
+                // Draw border
+                ctx2.beginPath();
+                ctx2.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                ctx2.strokeStyle = '#a16207';
+                ctx2.lineWidth = 2;
+                ctx2.stroke();
+
+                return canvas;
+            };
+
+            const halfAndHalfPointStyle = createHalfAndHalfPoint();
 
             const datasets = [
                 {
                     label: 'Poop',
-                    data: poopData,
+                    data: filteredPoopData,
                     backgroundColor: '#a16207',
                     borderColor: '#a16207',
                     pointRadius: 8,
@@ -2089,7 +2150,7 @@
                 },
                 {
                     label: 'Pee',
-                    data: peeData,
+                    data: filteredPeeData,
                     backgroundColor: '#eab308',
                     borderColor: '#eab308',
                     pointRadius: 8,
@@ -2105,6 +2166,13 @@
                     pointRadius: 9,
                     pointStyle: 'circle',
                     borderWidth: 3,
+                    showLine: false
+                },
+                {
+                    label: 'Pee + Poop',
+                    data: combinedPeePoopData,
+                    pointStyle: halfAndHalfPointStyle,
+                    pointRadius: 10,
                     showLine: false
                 },
                 {
@@ -2191,11 +2259,13 @@
 
             if (activityPatternChart) {
                 // Update existing chart - update each dataset's data individually
-                activityPatternChart.data.datasets[0].data = poopData;
+                activityPatternChart.data.datasets[0].data = filteredPoopData;
                 activityPatternChart.data.datasets[1].data = poopAccidentData;
-                activityPatternChart.data.datasets[2].data = peeData;
+                activityPatternChart.data.datasets[2].data = filteredPeeData;
                 activityPatternChart.data.datasets[3].data = peeAccidentData;
-                activityPatternChart.data.datasets[4].data = mealsData;
+                activityPatternChart.data.datasets[4].data = combinedPeePoopData;
+                activityPatternChart.data.datasets[4].pointStyle = halfAndHalfPointStyle;
+                activityPatternChart.data.datasets[5].data = mealsData;
                 activityPatternChart.options.scales.x.labels = labels;
                 activityPatternChart.update();
             } else {
