@@ -751,7 +751,8 @@
             padding: 14px 16px;
             margin-bottom: 16px;
             display: none;
-            align-items: center;
+            align-items: flex-start;
+            justify-content: space-between;
             gap: 12px;
             box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
             animation: sleepPulse 3s ease-in-out infinite;
@@ -766,32 +767,39 @@
             50% { box-shadow: 0 0 30px rgba(139, 92, 246, 0.4); }
         }
 
-        .active-sleep-banner .sleep-info {
+        .active-sleep-banner .sleep-banner-content {
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .active-sleep-banner .sleep-banner-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .active-sleep-banner .sleep-emoji {
-            font-size: 28px;
+            font-size: 24px;
         }
 
         .active-sleep-banner .sleep-title {
             font-weight: 600;
             font-size: 14px;
             color: #a78bfa;
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
 
-        .active-sleep-banner .sleep-elapsed {
+        .active-sleep-banner .sleep-duration {
+            font-size: 20px;
             font-weight: 700;
             color: white;
+            white-space: nowrap;
         }
 
         .active-sleep-banner .sleep-subtitle {
             font-size: 12px;
             color: rgba(255,255,255,0.6);
-            margin-top: 2px;
         }
 
         .active-sleep-banner .stop-sleep-btn {
@@ -804,6 +812,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
+            flex-shrink: 0;
         }
 
         .active-sleep-banner .stop-sleep-btn:active {
@@ -814,6 +823,12 @@
         .event-btn.sleep-start {
             background: linear-gradient(135deg, rgba(52, 211, 153, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
             border-color: rgba(52, 211, 153, 0.3);
+        }
+
+        /* Stop Sleep Button (when sleep is active) */
+        .event-btn.sleep-start.stop-sleep {
+            background: linear-gradient(135deg, rgba(167, 139, 250, 0.3) 0%, rgba(139, 92, 246, 0.2) 100%);
+            border-color: rgba(167, 139, 250, 0.5);
         }
     </style>
 </head>
@@ -851,9 +866,12 @@
 
         <!-- Active Sleep Banner -->
         <div class="active-sleep-banner" id="active-sleep-banner">
-            <span class="sleep-emoji">😴</span>
-            <div class="sleep-info">
-                <div class="sleep-title">Sleep in progress • <span class="sleep-elapsed" id="sleep-elapsed">0m</span></div>
+            <div class="sleep-banner-content">
+                <div class="sleep-banner-header">
+                    <span class="sleep-emoji">😴</span>
+                    <span class="sleep-title">Sleep in progress</span>
+                </div>
+                <div class="sleep-duration" id="sleep-elapsed">0m</div>
                 <div class="sleep-subtitle">Started <span id="sleep-start-time">--:--</span></div>
             </div>
             <button class="stop-sleep-btn" onclick="stopSleep()">Stop Sleep</button>
@@ -1485,9 +1503,6 @@
             localStorage.setItem('activeSleepStart', now.toString());
             showActiveSleepBanner(now);
             showToast('🛏️ Sleep started!');
-
-            // Disable start button
-            document.getElementById('start-sleep-btn').disabled = true;
         }
 
         function showActiveSleepBanner(startTimestamp) {
@@ -1503,7 +1518,14 @@
             });
 
             banner.classList.add('show');
-            document.getElementById('start-sleep-btn').disabled = true;
+
+            // Update the activities button to show "Stop Sleep"
+            const sleepBtn = document.getElementById('start-sleep-btn');
+            sleepBtn.disabled = false;
+            sleepBtn.classList.add('stop-sleep');
+            sleepBtn.onclick = stopSleep;
+            sleepBtn.querySelector('.emoji').textContent = '⏹';
+            sleepBtn.querySelector('span:last-child').textContent = 'Stop Sleep';
 
             // Update elapsed time immediately and then every minute
             updateSleepElapsed(startTimestamp);
@@ -1531,7 +1553,14 @@
         function hideActiveSleepBanner() {
             const banner = document.getElementById('active-sleep-banner');
             banner.classList.remove('show');
-            document.getElementById('start-sleep-btn').disabled = false;
+
+            // Restore the activities button to "Start Sleep"
+            const sleepBtn = document.getElementById('start-sleep-btn');
+            sleepBtn.disabled = false;
+            sleepBtn.classList.remove('stop-sleep');
+            sleepBtn.onclick = startSleep;
+            sleepBtn.querySelector('.emoji').textContent = '🛏️';
+            sleepBtn.querySelector('span:last-child').textContent = 'Start Sleep';
 
             if (sleepUpdateInterval) {
                 clearInterval(sleepUpdateInterval);
