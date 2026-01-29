@@ -1015,7 +1015,7 @@
                 <div class="chart-container activity-pattern-chart-container">
                     <canvas id="activityPatternChart"></canvas>
                 </div>
-                <p class="chart-note">White borders = accidents · Half brown/yellow = pee + poop together</p>
+                <p class="chart-note">White borders = accidents · Half brown/blue = pee + poop together</p>
             </div>
         </div>
     </div>
@@ -1945,7 +1945,7 @@
                 if (!chartArea || !activityPatternSleepData.length) return;
 
                 ctx.save();
-                ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
+                ctx.fillStyle = 'rgba(139, 92, 246, 0.15)';
 
                 activityPatternSleepData.forEach(period => {
                     const x = scales.x.getPixelForValue(period.dayLabel);
@@ -2109,10 +2109,10 @@
                 ctx2.fillStyle = '#a16207';
                 ctx2.fill();
 
-                // Draw right half (yellow - pee)
+                // Draw right half (blue - pee)
                 ctx2.beginPath();
                 ctx2.arc(centerX, centerY, radius, Math.PI * 1.5, Math.PI * 0.5);
-                ctx2.fillStyle = '#eab308';
+                ctx2.fillStyle = '#3b82f6';
                 ctx2.fill();
 
                 // Draw border
@@ -2151,8 +2151,8 @@
                 {
                     label: 'Pee',
                     data: filteredPeeData,
-                    backgroundColor: '#eab308',
-                    borderColor: '#eab308',
+                    backgroundColor: '#3b82f6',
+                    borderColor: '#3b82f6',
                     pointRadius: 8,
                     pointStyle: 'circle',
                     borderWidth: 2,
@@ -2161,7 +2161,7 @@
                 {
                     label: 'Pee Accident',
                     data: peeAccidentData,
-                    backgroundColor: '#eab308',
+                    backgroundColor: '#3b82f6',
                     borderColor: '#ffffff',
                     pointRadius: 9,
                     pointStyle: 'circle',
@@ -2188,7 +2188,7 @@
                 {
                     label: 'Sleep',
                     data: [],
-                    backgroundColor: 'rgba(59, 130, 246, 0.3)',
+                    backgroundColor: 'rgba(139, 92, 246, 0.3)',
                     pointRadius: 0,
                     showLine: false
                 }
