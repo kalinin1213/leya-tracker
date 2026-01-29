@@ -1173,8 +1173,8 @@
             if (reminderDismissed) return;
 
             const now = new Date();
-            const lastPee = events.find(e => e.type === 'pee');
-            const lastPoo = events.find(e => e.type === 'poo');
+            const lastPee = events.find(e => e.type === 'pee' || e.type === 'accident-pee');
+            const lastPoo = events.find(e => e.type === 'poo' || e.type === 'accident-poo');
 
             let showReminder = false;
             let reminderType = '';
