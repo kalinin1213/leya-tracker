@@ -418,6 +418,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             gap: 4px;
             background: none;
             border: none;
@@ -428,6 +429,8 @@
             padding: 8px 16px;
             border-radius: 12px;
             transition: all 0.2s;
+            flex: 1;
+            min-height: 44px;
         }
 
         .tab-item .icon {
@@ -713,11 +716,11 @@
         }
 
         .activity-pattern-chart-container {
-            height: 525px;
+            height: 580px;
         }
 
         .activity-pattern-chart-container canvas {
-            max-height: 525px;
+            max-height: 580px;
         }
 
         .chart-note {
@@ -975,6 +978,14 @@
         <!-- Stats View -->
         <div id="stats-view" class="view">
             <div class="stats-section">
+                <div class="stats-section-title">Activity Patterns (Last 7 Days)</div>
+                <div class="chart-container activity-pattern-chart-container">
+                    <canvas id="activityPatternChart"></canvas>
+                </div>
+                <p class="chart-note">White borders = accidents · Half brown/blue = pee + poop together</p>
+            </div>
+
+            <div class="stats-section">
                 <div class="stats-section-title">Sleep (Last 7 Days)</div>
                 <div class="chart-container">
                     <canvas id="sleepChart"></canvas>
@@ -1008,14 +1019,6 @@
                         <div class="label">Avg Sleep</div>
                     </div>
                 </div>
-            </div>
-
-            <div class="stats-section">
-                <div class="stats-section-title">Activity Patterns (Last 7 Days)</div>
-                <div class="chart-container activity-pattern-chart-container">
-                    <canvas id="activityPatternChart"></canvas>
-                </div>
-                <p class="chart-note">White borders = accidents · Half brown/blue = pee + poop together</p>
             </div>
         </div>
     </div>
@@ -1945,6 +1948,12 @@
                 if (!chartArea || !activityPatternSleepData.length) return;
 
                 ctx.save();
+
+                // Clip to chart area to prevent drawing over legend
+                ctx.beginPath();
+                ctx.rect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top);
+                ctx.clip();
+
                 ctx.fillStyle = 'rgba(139, 92, 246, 0.15)';
 
                 activityPatternSleepData.forEach(period => {
@@ -1960,6 +1969,39 @@
                         Math.abs(yEnd - yStart)
                     );
                 });
+
+                ctx.restore();
+            }
+        };
+
+        const currentTimeLinePlugin = {
+            id: 'currentTimeLine',
+            afterDatasetsDraw(chart) {
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+
+                const now = new Date();
+                const currentHour = now.getHours() + now.getMinutes() / 60;
+
+                // Only draw if current time is within chart range
+                if (currentHour < 4 || currentHour > 24) return;
+
+                const y = scales.y.getPixelForValue(currentHour);
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.setLineDash([6, 4]);
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)';
+                ctx.lineWidth = 2;
+                ctx.moveTo(chartArea.left, y);
+                ctx.lineTo(chartArea.right, y);
+                ctx.stroke();
+
+                // Draw "Now" label
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
+                ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('Now', chartArea.left + 5, y - 5);
 
                 ctx.restore();
             }
@@ -2079,27 +2121,53 @@
             const filteredPoopData = poopData.filter((_, idx) => !poopToRemove.has(idx));
             const filteredPeeData = peeData.filter((_, idx) => !peeToRemove.has(idx));
 
+            // Find overlapping pee and poop ACCIDENTS (within 10 minutes of each other)
+            const combinedAccidentData = [];
+            const peeAccidentToRemove = new Set();
+            const poopAccidentToRemove = new Set();
+
+            poopAccidentData.forEach((poopPoint, poopIdx) => {
+                peeAccidentData.forEach((peePoint, peeIdx) => {
+                    if (poopPoint.x === peePoint.x &&
+                        Math.abs(poopPoint.y - peePoint.y) <= TIME_THRESHOLD &&
+                        !peeAccidentToRemove.has(peeIdx) && !poopAccidentToRemove.has(poopIdx)) {
+                        // Found overlapping accident events - create combined point
+                        combinedAccidentData.push({
+                            x: poopPoint.x,
+                            y: (poopPoint.y + peePoint.y) / 2 // Average position
+                        });
+                        peeAccidentToRemove.add(peeIdx);
+                        poopAccidentToRemove.add(poopIdx);
+                    }
+                });
+            });
+
+            // Remove overlapping accidents from individual arrays
+            const filteredPoopAccidentData = poopAccidentData.filter((_, idx) => !poopAccidentToRemove.has(idx));
+            const filteredPeeAccidentData = peeAccidentData.filter((_, idx) => !peeAccidentToRemove.has(idx));
+
             // Debug: log processed data counts
             console.log('Processed data counts:', {
                 poop: filteredPoopData.length,
-                poopAccident: poopAccidentData.length,
+                poopAccident: filteredPoopAccidentData.length,
                 pee: filteredPeeData.length,
-                peeAccident: peeAccidentData.length,
+                peeAccident: filteredPeeAccidentData.length,
                 meals: mealsData.length,
                 sleep: activityPatternSleepData.length,
-                combined: combinedPeePoopData.length
+                combined: combinedPeePoopData.length,
+                combinedAccident: combinedAccidentData.length
             });
 
             const ctx = document.getElementById('activityPatternChart').getContext('2d');
 
             // Create half-and-half point style for combined pee/poop events
-            const createHalfAndHalfPoint = () => {
+            const createHalfAndHalfPoint = (withWhiteBorder = false) => {
                 const canvas = document.createElement('canvas');
-                const size = 20;
+                const size = withWhiteBorder ? 24 : 20;
                 canvas.width = size;
                 canvas.height = size;
                 const ctx2 = canvas.getContext('2d');
-                const radius = size / 2 - 1;
+                const radius = size / 2 - (withWhiteBorder ? 3 : 1);
                 const centerX = size / 2;
                 const centerY = size / 2;
 
@@ -2118,14 +2186,15 @@
                 // Draw border
                 ctx2.beginPath();
                 ctx2.arc(centerX, centerY, radius, 0, Math.PI * 2);
-                ctx2.strokeStyle = '#a16207';
-                ctx2.lineWidth = 2;
+                ctx2.strokeStyle = withWhiteBorder ? '#ffffff' : '#a16207';
+                ctx2.lineWidth = withWhiteBorder ? 3 : 2;
                 ctx2.stroke();
 
                 return canvas;
             };
 
-            const halfAndHalfPointStyle = createHalfAndHalfPoint();
+            const halfAndHalfPointStyle = createHalfAndHalfPoint(false);
+            const halfAndHalfAccidentPointStyle = createHalfAndHalfPoint(true);
 
             const datasets = [
                 {
@@ -2140,7 +2209,7 @@
                 },
                 {
                     label: 'Poop Accident',
-                    data: poopAccidentData,
+                    data: filteredPoopAccidentData,
                     backgroundColor: '#a16207',
                     borderColor: '#ffffff',
                     pointRadius: 9,
@@ -2160,7 +2229,7 @@
                 },
                 {
                     label: 'Pee Accident',
-                    data: peeAccidentData,
+                    data: filteredPeeAccidentData,
                     backgroundColor: '#3b82f6',
                     borderColor: '#ffffff',
                     pointRadius: 9,
@@ -2173,6 +2242,13 @@
                     data: combinedPeePoopData,
                     pointStyle: halfAndHalfPointStyle,
                     pointRadius: 10,
+                    showLine: false
+                },
+                {
+                    label: 'Pee + Poop Accident',
+                    data: combinedAccidentData,
+                    pointStyle: halfAndHalfAccidentPointStyle,
+                    pointRadius: 11,
                     showLine: false
                 },
                 {
@@ -2205,7 +2281,7 @@
                         ticks: { color: '#94a3b8' }
                     },
                     y: {
-                        min: 5,
+                        min: 4,
                         max: 24,
                         reverse: true,
                         grid: { color: 'rgba(255, 255, 255, 0.1)' },
@@ -2260,12 +2336,14 @@
             if (activityPatternChart) {
                 // Update existing chart - update each dataset's data individually
                 activityPatternChart.data.datasets[0].data = filteredPoopData;
-                activityPatternChart.data.datasets[1].data = poopAccidentData;
+                activityPatternChart.data.datasets[1].data = filteredPoopAccidentData;
                 activityPatternChart.data.datasets[2].data = filteredPeeData;
-                activityPatternChart.data.datasets[3].data = peeAccidentData;
+                activityPatternChart.data.datasets[3].data = filteredPeeAccidentData;
                 activityPatternChart.data.datasets[4].data = combinedPeePoopData;
                 activityPatternChart.data.datasets[4].pointStyle = halfAndHalfPointStyle;
-                activityPatternChart.data.datasets[5].data = mealsData;
+                activityPatternChart.data.datasets[5].data = combinedAccidentData;
+                activityPatternChart.data.datasets[5].pointStyle = halfAndHalfAccidentPointStyle;
+                activityPatternChart.data.datasets[6].data = mealsData;
                 activityPatternChart.options.scales.x.labels = labels;
                 activityPatternChart.update();
             } else {
@@ -2274,7 +2352,7 @@
                     type: 'scatter',
                     data: { datasets: datasets },
                     options: options,
-                    plugins: [sleepBackgroundPlugin]
+                    plugins: [sleepBackgroundPlugin, currentTimeLinePlugin]
                 });
             }
         }
