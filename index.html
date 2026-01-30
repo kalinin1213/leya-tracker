@@ -1518,18 +1518,63 @@
 
         // Active Sleep Timer functionality
         let sleepUpdateInterval = null;
+        let activeSleepUnsubscribe = null;
 
-        function startSleep() {
-            // Check if sleep is already active
+        // Subscribe to active sleep state from Firestore for cross-device sync
+        function subscribeToActiveSleep() {
+            activeSleepUnsubscribe = db.collection('state').doc('activeSleep')
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        const startTimestamp = data.startTime.toMillis();
+                        // Sync localStorage with Firestore
+                        localStorage.setItem('activeSleepStart', startTimestamp.toString());
+                        showActiveSleepBanner(startTimestamp);
+                    } else {
+                        // No active sleep in Firestore - clear local state
+                        localStorage.removeItem('activeSleepStart');
+                        hideActiveSleepBanner();
+                    }
+                }, (error) => {
+                    console.error('Active sleep subscription error:', error);
+                    // Fall back to localStorage check
+                    checkActiveSleepLocal();
+                });
+        }
+
+        // Local-only check for active sleep (fallback for offline)
+        function checkActiveSleepLocal() {
+            const startTimestamp = localStorage.getItem('activeSleepStart');
+            if (startTimestamp) {
+                showActiveSleepBanner(parseInt(startTimestamp));
+            }
+        }
+
+        async function startSleep() {
+            // Check if sleep is already active (local check for immediate feedback)
             if (localStorage.getItem('activeSleepStart')) {
                 showToast('Sleep is already in progress!');
                 return;
             }
 
-            const now = Date.now();
-            localStorage.setItem('activeSleepStart', now.toString());
-            showActiveSleepBanner(now);
-            showToast('🛏️ Sleep started!');
+            const now = new Date();
+            const startTimestamp = now.getTime();
+
+            try {
+                // Write to Firestore first for cross-device sync
+                await db.collection('state').doc('activeSleep').set({
+                    startTime: firebase.firestore.Timestamp.fromDate(now),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                // localStorage will be set by the onSnapshot listener
+                showToast('🛏️ Sleep started!');
+            } catch (error) {
+                console.error('Error starting sleep:', error);
+                // Fallback to localStorage only if offline
+                localStorage.setItem('activeSleepStart', startTimestamp.toString());
+                showActiveSleepBanner(startTimestamp);
+                showToast('🛏️ Sleep started (offline)!');
+            }
         }
 
         function showActiveSleepBanner(startTimestamp) {
@@ -1613,6 +1658,7 @@
             const durationText = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 
             try {
+                // Save the sleep event
                 await db.collection('events').add({
                     type: 'sleep',
                     timestamp: firebase.firestore.Timestamp.fromDate(endTime),
@@ -1623,17 +1669,24 @@
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                // Clear localStorage and hide banner
-                localStorage.removeItem('activeSleepStart');
-                hideActiveSleepBanner();
+                // Delete the active sleep document from Firestore
+                // This will trigger onSnapshot on all devices to hide the banner
+                await db.collection('state').doc('activeSleep').delete();
+
+                // localStorage will be cleared by the onSnapshot listener
                 showToast(`😴 ${durationText} sleep logged!`);
             } catch (error) {
                 console.error('Error saving sleep:', error);
-                showToast('Error saving sleep - will retry');
+                // If offline, still clear local state so user can see the result
+                localStorage.removeItem('activeSleepStart');
+                hideActiveSleepBanner();
+                showToast('Error saving sleep - will retry when online');
             }
         }
 
         function checkActiveSleep() {
+            // This function is now a fallback - the main sync happens via subscribeToActiveSleep()
+            // It's called during initialization to show the banner while waiting for Firestore
             const startTimestamp = localStorage.getItem('activeSleepStart');
             if (startTimestamp) {
                 showActiveSleepBanner(parseInt(startTimestamp));
@@ -2529,8 +2582,9 @@
         // Initialize
         updateConnectionStatus(navigator.onLine);
         subscribeToEvents();
+        subscribeToActiveSleep(); // Cross-device sync for active sleep
         setupMidnightCheck();
-        checkActiveSleep();
+        checkActiveSleep(); // Fallback: show banner from localStorage while waiting for Firestore
         
         // Update UI and stats every minute (keeps relative times accurate)
         setInterval(() => {
