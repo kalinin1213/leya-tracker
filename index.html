@@ -68,12 +68,15 @@
         .header-avatar {
             width: 56px;
             height: 56px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .sync-status {
@@ -864,7 +867,7 @@
                 <p id="header-hint">Tap to log • Hold to edit time</p>
             </div>
             <div class="header-right">
-                <div class="header-avatar">🐕</div>
+                <div class="header-avatar"><img src="leya-avatar.png" alt="Leya"></div>
                 <div class="sync-status">
                     <span class="dot" id="sync-dot"></span>
                     <span id="sync-text">Synced</span>
