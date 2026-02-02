@@ -1526,39 +1526,61 @@
         // Subscribe to active sleep state from Firestore for cross-device sync
         function subscribeToActiveSleep() {
             activeSleepUnsubscribe = db.collection('state').doc('activeSleep')
-                .onSnapshot({ includeMetadataChanges: true }, (doc) => {
-                    const metadata = doc.metadata;
-
+                .onSnapshot((doc) => {
                     if (doc.exists) {
                         const data = doc.data();
                         // Check if startTime exists and is valid
-                        if (data.startTime && data.startTime.toMillis) {
-                            const startTimestamp = data.startTime.toMillis();
+                        if (data && data.startTime) {
+                            let startTimestamp;
+                            // Handle both Timestamp objects and raw values
+                            if (data.startTime.toMillis) {
+                                startTimestamp = data.startTime.toMillis();
+                            } else if (data.startTime.seconds) {
+                                startTimestamp = data.startTime.seconds * 1000;
+                            } else {
+                                startTimestamp = data.startTime;
+                            }
+
                             // Sync localStorage with Firestore
                             localStorage.setItem('activeSleepStart', startTimestamp.toString());
                             showActiveSleepBanner(startTimestamp);
-
-                            // Update sync indicator based on whether data is from cache or server
-                            if (metadata.hasPendingWrites) {
-                                document.getElementById('sync-text').textContent = 'Syncing...';
-                            } else if (!metadata.fromCache) {
-                                document.getElementById('sync-text').textContent = 'Synced';
-                                document.getElementById('sync-dot').className = 'dot';
-                            }
                         }
                     } else {
-                        // No active sleep in Firestore - clear local state only if data is from server
-                        // This prevents clearing local state based on stale cached data
-                        if (!metadata.fromCache) {
-                            localStorage.removeItem('activeSleepStart');
-                            hideActiveSleepBanner();
-                        }
+                        // No active sleep in Firestore - clear local state
+                        localStorage.removeItem('activeSleepStart');
+                        hideActiveSleepBanner();
                     }
                 }, (error) => {
                     console.error('Active sleep subscription error:', error);
                     // Fall back to localStorage check
                     checkActiveSleepLocal();
+                    // Also try a one-time fetch as backup
+                    fetchActiveSleepOnce();
                 });
+        }
+
+        // One-time fetch of active sleep as backup for subscription issues
+        async function fetchActiveSleepOnce() {
+            try {
+                const doc = await db.collection('state').doc('activeSleep').get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (data && data.startTime) {
+                        let startTimestamp;
+                        if (data.startTime.toMillis) {
+                            startTimestamp = data.startTime.toMillis();
+                        } else if (data.startTime.seconds) {
+                            startTimestamp = data.startTime.seconds * 1000;
+                        } else {
+                            startTimestamp = data.startTime;
+                        }
+                        localStorage.setItem('activeSleepStart', startTimestamp.toString());
+                        showActiveSleepBanner(startTimestamp);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching active sleep:', error);
+            }
         }
 
         // Local-only check for active sleep (fallback for offline)
@@ -2613,7 +2635,13 @@
         subscribeToActiveSleep(); // Cross-device sync for active sleep
         setupMidnightCheck();
         checkActiveSleep(); // Fallback: show banner from localStorage while waiting for Firestore
-        
+
+        // Proactively fetch active sleep state from server to ensure cross-device sync
+        // This handles cases where the subscription might miss updates
+        setTimeout(() => {
+            fetchActiveSleepOnce();
+        }, 1000);
+
         // Update UI and stats every minute (keeps relative times accurate)
         setInterval(() => {
             updateUI();
