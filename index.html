@@ -1526,17 +1526,33 @@
         // Subscribe to active sleep state from Firestore for cross-device sync
         function subscribeToActiveSleep() {
             activeSleepUnsubscribe = db.collection('state').doc('activeSleep')
-                .onSnapshot((doc) => {
+                .onSnapshot({ includeMetadataChanges: true }, (doc) => {
+                    const metadata = doc.metadata;
+
                     if (doc.exists) {
                         const data = doc.data();
-                        const startTimestamp = data.startTime.toMillis();
-                        // Sync localStorage with Firestore
-                        localStorage.setItem('activeSleepStart', startTimestamp.toString());
-                        showActiveSleepBanner(startTimestamp);
+                        // Check if startTime exists and is valid
+                        if (data.startTime && data.startTime.toMillis) {
+                            const startTimestamp = data.startTime.toMillis();
+                            // Sync localStorage with Firestore
+                            localStorage.setItem('activeSleepStart', startTimestamp.toString());
+                            showActiveSleepBanner(startTimestamp);
+
+                            // Update sync indicator based on whether data is from cache or server
+                            if (metadata.hasPendingWrites) {
+                                document.getElementById('sync-text').textContent = 'Syncing...';
+                            } else if (!metadata.fromCache) {
+                                document.getElementById('sync-text').textContent = 'Synced';
+                                document.getElementById('sync-dot').className = 'dot';
+                            }
+                        }
                     } else {
-                        // No active sleep in Firestore - clear local state
-                        localStorage.removeItem('activeSleepStart');
-                        hideActiveSleepBanner();
+                        // No active sleep in Firestore - clear local state only if data is from server
+                        // This prevents clearing local state based on stale cached data
+                        if (!metadata.fromCache) {
+                            localStorage.removeItem('activeSleepStart');
+                            hideActiveSleepBanner();
+                        }
                     }
                 }, (error) => {
                     console.error('Active sleep subscription error:', error);
@@ -1563,20 +1579,24 @@
             const now = new Date();
             const startTimestamp = now.getTime();
 
+            // Set localStorage immediately for reliability (don't rely solely on onSnapshot)
+            localStorage.setItem('activeSleepStart', startTimestamp.toString());
+            showActiveSleepBanner(startTimestamp);
+
             try {
-                // Write to Firestore first for cross-device sync
+                // Write to Firestore for cross-device sync
                 await db.collection('state').doc('activeSleep').set({
                     startTime: firebase.firestore.Timestamp.fromDate(now),
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                // localStorage will be set by the onSnapshot listener
+
+                // Wait for the write to actually sync to server (not just local cache)
+                await db.waitForPendingWrites();
                 showToast('🛏️ Sleep started!');
             } catch (error) {
                 console.error('Error starting sleep:', error);
-                // Fallback to localStorage only if offline
-                localStorage.setItem('activeSleepStart', startTimestamp.toString());
-                showActiveSleepBanner(startTimestamp);
-                showToast('🛏️ Sleep started (offline)!');
+                // Data is saved locally, will sync when back online
+                showToast('🛏️ Sleep started (syncing...)');
             }
         }
 
@@ -1660,6 +1680,10 @@
             const mins = totalMins % 60;
             const durationText = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 
+            // Clear local state immediately for responsive UI
+            localStorage.removeItem('activeSleepStart');
+            hideActiveSleepBanner();
+
             try {
                 // Save the sleep event
                 await db.collection('events').add({
@@ -1676,14 +1700,13 @@
                 // This will trigger onSnapshot on all devices to hide the banner
                 await db.collection('state').doc('activeSleep').delete();
 
-                // localStorage will be cleared by the onSnapshot listener
+                // Wait for the writes to actually sync to server
+                await db.waitForPendingWrites();
                 showToast(`😴 ${durationText} sleep logged!`);
             } catch (error) {
                 console.error('Error saving sleep:', error);
-                // If offline, still clear local state so user can see the result
-                localStorage.removeItem('activeSleepStart');
-                hideActiveSleepBanner();
-                showToast('Error saving sleep - will retry when online');
+                // Data is saved locally with persistence, will sync when back online
+                showToast(`😴 ${durationText} logged (syncing...)`);
             }
         }
 
