@@ -1801,10 +1801,11 @@
             const diffMs = now - date;
             const diffMins = Math.floor(diffMs / 60000);
             const diffHours = Math.floor(diffMins / 60);
+            const remainingMins = diffMins % 60;
 
             if (diffMins < 1) return 'now';
             if (diffMins < 60) return `${diffMins}m`;
-            if (diffHours < 24) return `${diffHours}h`;
+            if (diffHours < 24) return `${diffHours}h${remainingMins > 0 ? remainingMins : ''}`;
             return formatDate(event);
         }
 
@@ -1952,7 +1953,7 @@
             const sleepTodayMs = getDaySleepTotal(today);
             const hours = Math.floor(sleepTodayMs / 3600000);
             const mins = Math.floor((sleepTodayMs % 3600000) / 60000);
-            document.getElementById('sleep-today').textContent = hours > 0 ? `${hours}h` : `${mins}m`;
+            document.getElementById('sleep-today').textContent = hours > 0 ? `${hours}h${mins > 0 ? mins : ''}` : `${mins}m`;
         }
 
         function switchTab(tab) {
