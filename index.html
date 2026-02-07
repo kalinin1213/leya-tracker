@@ -706,6 +706,60 @@
             letter-spacing: 1px;
         }
 
+        .chart-nav-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .chart-nav-header .stats-section-title {
+            margin-bottom: 0;
+        }
+
+        .chart-nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-nav-btn {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.6);
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .chart-nav-btn:hover {
+            background: rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.9);
+        }
+
+        .chart-nav-btn:disabled {
+            opacity: 0.3;
+            cursor: default;
+        }
+
+        .chart-nav-btn:disabled:hover {
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.6);
+        }
+
+        .chart-date-range {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            min-width: 100px;
+            text-align: center;
+        }
+
         .chart-container {
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(255,255,255,0.05);
@@ -981,7 +1035,14 @@
         <!-- Stats View -->
         <div id="stats-view" class="view">
             <div class="stats-section">
-                <div class="stats-section-title">Activity Patterns (Last 14 Days)</div>
+                <div class="chart-nav-header">
+                    <div class="stats-section-title">Activity Patterns</div>
+                    <div class="chart-nav-controls">
+                        <button class="chart-nav-btn" onclick="navigateChart('activity', -1)">&#8249;</button>
+                        <span class="chart-date-range" id="activity-date-range"></span>
+                        <button class="chart-nav-btn" id="activity-nav-fwd" onclick="navigateChart('activity', 1)">&#8250;</button>
+                    </div>
+                </div>
                 <div class="chart-container activity-pattern-chart-container">
                     <canvas id="activityPatternChart"></canvas>
                 </div>
@@ -989,14 +1050,28 @@
             </div>
 
             <div class="stats-section">
-                <div class="stats-section-title">Sleep (Last 14 Days)</div>
+                <div class="chart-nav-header">
+                    <div class="stats-section-title">Sleep</div>
+                    <div class="chart-nav-controls">
+                        <button class="chart-nav-btn" onclick="navigateChart('sleep', -1)">&#8249;</button>
+                        <span class="chart-date-range" id="sleep-date-range"></span>
+                        <button class="chart-nav-btn" id="sleep-nav-fwd" onclick="navigateChart('sleep', 1)">&#8250;</button>
+                    </div>
+                </div>
                 <div class="chart-container">
                     <canvas id="sleepChart"></canvas>
                 </div>
             </div>
 
             <div class="stats-section">
-                <div class="stats-section-title">Accidents (Last 14 Days)</div>
+                <div class="chart-nav-header">
+                    <div class="stats-section-title">Accidents</div>
+                    <div class="chart-nav-controls">
+                        <button class="chart-nav-btn" onclick="navigateChart('accidents', -1)">&#8249;</button>
+                        <span class="chart-date-range" id="accidents-date-range"></span>
+                        <button class="chart-nav-btn" id="accidents-nav-fwd" onclick="navigateChart('accidents', 1)">&#8250;</button>
+                    </div>
+                </div>
                 <div class="chart-container">
                     <canvas id="accidentsChart"></canvas>
                 </div>
@@ -2050,14 +2125,30 @@
         }
 
         // Charts
-        function getLast14Days() {
+        let chartOffsets = { activity: 0, sleep: 0, accidents: 0 };
+
+        function getDays(count, offset) {
             const days = [];
-            for (let i = 13; i >= 0; i--) {
+            const startOffset = (count - 1) + (offset * count);
+            for (let i = startOffset; i >= offset * count; i--) {
                 const date = new Date();
                 date.setDate(date.getDate() - i);
                 days.push(date);
             }
             return days;
+        }
+
+        function formatDateRange(days) {
+            const first = days[0];
+            const last = days[days.length - 1];
+            const fmt = d => `${d.getMonth() + 1}/${d.getDate()}`;
+            return `${fmt(first)} – ${fmt(last)}`;
+        }
+
+        function navigateChart(chart, direction) {
+            chartOffsets[chart] -= direction;
+            if (chartOffsets[chart] < 0) chartOffsets[chart] = 0;
+            updateCharts();
         }
 
         // Activity Pattern Chart helpers
@@ -2493,28 +2584,39 @@
         }
 
         function updateCharts() {
-            const last14Days = getLast14Days();
-            const labels = last14Days.map(d => {
-                const month = d.getMonth() + 1;
-                const day = d.getDate();
-                return `${month}/${day}`;
-            });
+            // Activity pattern: 7-day window with offset
+            const activityDays = getDays(7, chartOffsets.activity);
+            const activityLabels = activityDays.map(d => d.toLocaleDateString('en-US', { weekday: 'short' }));
+            document.getElementById('activity-date-range').textContent = formatDateRange(activityDays);
+            document.getElementById('activity-nav-fwd').disabled = chartOffsets.activity === 0;
+
+            // Sleep: 14-day window with offset
+            const sleepDays = getDays(14, chartOffsets.sleep);
+            const sleepLabels = sleepDays.map(d => `${d.getMonth() + 1}/${d.getDate()}`);
+            document.getElementById('sleep-date-range').textContent = formatDateRange(sleepDays);
+            document.getElementById('sleep-nav-fwd').disabled = chartOffsets.sleep === 0;
+
+            // Accidents: 14-day window with offset
+            const accidentsDays = getDays(14, chartOffsets.accidents);
+            const accidentsLabels = accidentsDays.map(d => `${d.getMonth() + 1}/${d.getDate()}`);
+            document.getElementById('accidents-date-range').textContent = formatDateRange(accidentsDays);
+            document.getElementById('accidents-nav-fwd').disabled = chartOffsets.accidents === 0;
 
             // Sleep data
-            const sleepData = last14Days.map(day => {
+            const sleepData = sleepDays.map(day => {
                 const sleepMs = getDaySleepTotal(day.toDateString());
-                return Math.round(sleepMs / 3600000 * 10) / 10; // Hours with 1 decimal
+                return Math.round(sleepMs / 3600000 * 10) / 10;
             });
 
             // Accidents data
-            const accidentsPeeData = last14Days.map(day => {
+            const accidentsPeeData = accidentsDays.map(day => {
                 return events.filter(e =>
                     e.type === 'accident-pee' &&
                     getTimestamp(e).toDateString() === day.toDateString()
                 ).length;
             });
 
-            const accidentsPooData = last14Days.map(day => {
+            const accidentsPooData = accidentsDays.map(day => {
                 return events.filter(e =>
                     e.type === 'accident-poo' &&
                     getTimestamp(e).toDateString() === day.toDateString()
@@ -2524,14 +2626,14 @@
             // Update or create sleep chart
             const sleepCtx = document.getElementById('sleepChart').getContext('2d');
             if (sleepChart) {
-                sleepChart.data.labels = labels;
+                sleepChart.data.labels = sleepLabels;
                 sleepChart.data.datasets[0].data = sleepData;
                 sleepChart.update();
             } else {
                 sleepChart = new Chart(sleepCtx, {
                     type: 'bar',
                     data: {
-                        labels: labels,
+                        labels: sleepLabels,
                         datasets: [{
                             label: 'Hours',
                             data: sleepData,
@@ -2565,7 +2667,7 @@
             // Update or create accidents chart
             const accidentsCtx = document.getElementById('accidentsChart').getContext('2d');
             if (accidentsChart) {
-                accidentsChart.data.labels = labels;
+                accidentsChart.data.labels = accidentsLabels;
                 accidentsChart.data.datasets[0].data = accidentsPeeData;
                 accidentsChart.data.datasets[1].data = accidentsPooData;
                 accidentsChart.update();
@@ -2573,7 +2675,7 @@
                 accidentsChart = new Chart(accidentsCtx, {
                     type: 'bar',
                     data: {
-                        labels: labels,
+                        labels: accidentsLabels,
                         datasets: [{
                             label: 'Pee',
                             data: accidentsPeeData,
@@ -2620,7 +2722,7 @@
                 });
             }
 
-            // Update summary stats
+            // Update summary stats (always last 14 days, not affected by navigation)
             const fourteenDaysAgo = new Date();
             fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
@@ -2632,12 +2734,17 @@
                 e.type === 'accident-pee' || e.type === 'accident-poo'
             ).length;
 
-            const totalSleepMs = sleepData.reduce((a, b) => a + b, 0) * 3600000;
+            const sleepDaysForAvg = getDays(14, 0);
+            const avgSleepData = sleepDaysForAvg.map(day => {
+                const sleepMs = getDaySleepTotal(day.toDateString());
+                return Math.round(sleepMs / 3600000 * 10) / 10;
+            });
+            const totalSleepMs = avgSleepData.reduce((a, b) => a + b, 0) * 3600000;
             const avgSleepHours = Math.round(totalSleepMs / 14 / 3600000 * 10) / 10;
             document.getElementById('avg-sleep').textContent = `${avgSleepHours}h`;
 
             // Update activity pattern chart
-            createActivityPatternChart(last14Days, labels);
+            createActivityPatternChart(activityDays, activityLabels);
         }
 
         // Close modals on outside click
