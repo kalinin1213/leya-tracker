@@ -718,6 +718,14 @@
             max-height: 200px;
         }
 
+        .sleep-chart-container {
+            height: 400px;
+        }
+
+        .sleep-chart-container canvas {
+            max-height: 400px;
+        }
+
         .activity-pattern-chart-container {
             height: 580px;
         }
@@ -1038,7 +1046,7 @@
                     <span class="chart-nav-label" id="sleep-nav-label"></span>
                     <button class="chart-nav-btn" id="sleep-nav-fwd" onclick="navigateChart('sleep', 1)">&#8250;</button>
                 </div>
-                <div class="chart-container">
+                <div class="chart-container sleep-chart-container">
                     <canvas id="sleepChart"></canvas>
                 </div>
             </div>
@@ -2150,6 +2158,43 @@
             }
         };
 
+        const sleepAverageLinePlugin = {
+            id: 'sleepAverageLine',
+            afterDatasetsDraw(chart) {
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+
+                const data = chart.data.datasets[0].data;
+                const nonZero = data.filter(v => v > 0);
+                if (nonZero.length === 0) return;
+
+                const avg = nonZero.reduce((a, b) => a + b, 0) / nonZero.length;
+                const y = scales.y.getPixelForValue(avg);
+
+                // Format as XXhYYm
+                const hours = Math.floor(avg);
+                const minutes = Math.round((avg - hours) * 60);
+                const label = `${hours}h${minutes.toString().padStart(2, '0')}m`;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.setLineDash([6, 4]);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.lineWidth = 2;
+                ctx.moveTo(chartArea.left, y);
+                ctx.lineTo(chartArea.right, y);
+                ctx.stroke();
+
+                // Draw label
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(label, chartArea.left + 5, y - 5);
+
+                ctx.restore();
+            }
+        };
+
         const currentTimeLinePlugin = {
             id: 'currentTimeLine',
             afterDatasetsDraw(chart) {
@@ -2589,7 +2634,7 @@
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: true,
+                        maintainAspectRatio: false,
                         plugins: {
                             legend: { display: false }
                         },
@@ -2604,7 +2649,8 @@
                                 ticks: { color: 'rgba(255,255,255,0.5)', maxRotation: 45, font: { size: 10 } }
                             }
                         }
-                    }
+                    },
+                    plugins: [sleepAverageLinePlugin]
                 });
             }
 
