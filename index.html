@@ -2165,7 +2165,17 @@
                 if (!chartArea) return;
 
                 const data = chart.data.datasets[0].data;
-                const nonZero = data.filter(v => v > 0);
+                const labels = chart.data.labels;
+
+                // Exclude today (incomplete day) from average calculation
+                const today = new Date();
+                const todayLabel = `${today.getMonth() + 1}/${today.getDate()}`;
+                let dataForAvg = data;
+                if (labels.length > 0 && labels[labels.length - 1] === todayLabel) {
+                    dataForAvg = data.slice(0, -1);
+                }
+
+                const nonZero = dataForAvg.filter(v => v > 0);
                 if (nonZero.length === 0) return;
 
                 const avg = nonZero.reduce((a, b) => a + b, 0) / nonZero.length;
@@ -2731,8 +2741,14 @@
                 e.type === 'accident-pee' || e.type === 'accident-poo'
             ).length;
 
-            const totalSleepMs = summarySleepData.reduce((a, b) => a + b, 0) * 3600000;
-            const avgSleepHours = Math.round(totalSleepMs / 14 / 3600000 * 10) / 10;
+            // Exclude today (incomplete day) from average calculation
+            const todayStr = new Date().toDateString();
+            const completedSleepData = summaryDays
+                .map((day, i) => ({ isToday: day.toDateString() === todayStr, value: summarySleepData[i] }))
+                .filter(d => !d.isToday && d.value > 0);
+            const avgSleepHours = completedSleepData.length > 0
+                ? Math.round(completedSleepData.reduce((sum, d) => sum + d.value, 0) / completedSleepData.length * 10) / 10
+                : 0;
             document.getElementById('avg-sleep').textContent = `${avgSleepHours}h`;
 
             // Update activity pattern chart (7 days)
