@@ -1585,7 +1585,7 @@
         // Uses includeMetadataChanges so we get a callback when fromCache flips
         // from true to false, giving us a definitive server-confirmed answer.
         function subscribeToActiveSleep() {
-            activeSleepUnsubscribe = db.collection('state').doc('activeSleep')
+            activeSleepUnsubscribe = db.collection('events').doc('__activeSleep__')
                 .onSnapshot({ includeMetadataChanges: true }, (doc) => {
                     if (doc.exists) {
                         const data = doc.data();
@@ -1645,7 +1645,7 @@
 
             try {
                 // Write to Firestore for cross-device sync
-                await db.collection('state').doc('activeSleep').set({
+                await db.collection('events').doc('__activeSleep__').set({
                     startTime: firebase.firestore.Timestamp.fromDate(now),
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
@@ -1758,7 +1758,7 @@
 
                 // Delete the active sleep document from Firestore
                 // This will trigger onSnapshot on all devices to hide the banner
-                await db.collection('state').doc('activeSleep').delete();
+                await db.collection('events').doc('__activeSleep__').delete();
 
                 // Wait for the writes to actually sync to server
                 await db.waitForPendingWrites();
