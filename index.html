@@ -911,104 +911,6 @@
             border-color: rgba(250, 204, 21, 0.3);
         }
 
-        .event-btn.training-start.stop-training {
-            background: linear-gradient(135deg, rgba(250, 204, 21, 0.35) 0%, rgba(234, 179, 8, 0.25) 100%);
-            border-color: rgba(250, 204, 21, 0.5);
-            animation: trainingPulse 3s ease-in-out infinite;
-        }
-
-        .event-btn.training-past {
-            background: rgba(255,255,255,0.03);
-            border: 1px dashed rgba(250, 204, 21, 0.3);
-        }
-
-        /* Active Training Banner */
-        .active-training-banner {
-            background: linear-gradient(135deg, rgba(250, 204, 21, 0.2) 0%, rgba(234, 179, 8, 0.12) 100%);
-            border: 1px solid rgba(250, 204, 21, 0.35);
-            border-radius: 16px;
-            padding: 14px 16px;
-            margin-bottom: 16px;
-            display: none;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 12px;
-            box-shadow: 0 0 20px rgba(250, 204, 21, 0.15);
-            animation: trainingPulse 3s ease-in-out infinite;
-        }
-
-        .active-training-banner.show {
-            display: flex;
-        }
-
-        @keyframes trainingPulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(250, 204, 21, 0.15); }
-            50% { box-shadow: 0 0 30px rgba(250, 204, 21, 0.35); }
-        }
-
-        .active-training-banner .training-banner-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .active-training-banner .training-banner-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .active-training-banner .training-emoji {
-            font-size: 24px;
-        }
-
-        .active-training-banner .training-title {
-            font-weight: 600;
-            font-size: 14px;
-            color: #fde047;
-        }
-
-        .active-training-banner .training-type-label {
-            display: inline-block;
-            background: rgba(250, 204, 21, 0.2);
-            border: 1px solid rgba(250, 204, 21, 0.3);
-            border-radius: 8px;
-            padding: 2px 8px;
-            font-size: 11px;
-            color: #fde047;
-            margin-top: 2px;
-            width: fit-content;
-        }
-
-        .active-training-banner .training-duration {
-            font-size: 22px;
-            font-weight: 700;
-            color: white;
-            white-space: nowrap;
-        }
-
-        .active-training-banner .training-subtitle {
-            font-size: 12px;
-            color: rgba(255,255,255,0.6);
-        }
-
-        .active-training-banner .stop-training-btn {
-            background: linear-gradient(135deg, #fde047 0%, #eab308 100%);
-            border: none;
-            color: #1a1a1a;
-            padding: 10px 16px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            flex-shrink: 0;
-        }
-
-        .active-training-banner .stop-training-btn:active {
-            transform: scale(0.95);
-        }
 
         /* Training Type Chips */
         .training-type-grid {
@@ -1088,59 +990,6 @@
 
         .outcome-btn:active {
             transform: scale(0.95);
-        }
-
-        /* Duration Quick-Select Pills */
-        .duration-pills {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .duration-pill {
-            flex: 1;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 10px;
-            padding: 10px;
-            font-size: 13px;
-            color: rgba(255,255,255,0.7);
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.2s;
-        }
-
-        .duration-pill.selected {
-            background: rgba(250, 204, 21, 0.2);
-            border-color: rgba(250, 204, 21, 0.5);
-            color: #fde047;
-        }
-
-        .duration-pill:active {
-            transform: scale(0.95);
-        }
-
-        /* Training Summary Card in Stop Modal */
-        .training-summary-card {
-            background: rgba(250, 204, 21, 0.08);
-            border: 1px solid rgba(250, 204, 21, 0.2);
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .training-summary-card .summary-duration {
-            font-size: 24px;
-            font-weight: 700;
-            color: #fde047;
-        }
-
-        .training-summary-card .summary-type {
-            font-size: 13px;
-            color: rgba(255,255,255,0.6);
         }
 
         /* Training event history chips */
@@ -1327,20 +1176,6 @@
             <button class="stop-sleep-btn" onclick="stopSleep()">Stop Sleep</button>
         </div>
 
-        <!-- Active Training Banner -->
-        <div class="active-training-banner" id="active-training-banner">
-            <div class="training-banner-content">
-                <div class="training-banner-header">
-                    <span class="training-emoji">🎓</span>
-                    <span class="training-title">Training in progress</span>
-                </div>
-                <div class="training-type-label" id="training-banner-type">Be Alone</div>
-                <div class="training-duration" id="training-elapsed">0:00</div>
-                <div class="training-subtitle">Started <span id="training-start-time">--:--</span></div>
-            </div>
-            <button class="stop-training-btn" onclick="openStopTrainingModal()">Stop &amp; Log</button>
-        </div>
-
         <!-- Log View -->
         <div id="log-view" class="view active">
             <div class="stats-bar">
@@ -1399,13 +1234,9 @@
 
             <div class="section-label">Training</div>
             <div class="training-row">
-                <button class="event-btn training-start" id="start-training-btn" onclick="openStartTrainingModal()">
+                <button class="event-btn training-start" onclick="openAddPastTrainingModal()">
                     <span class="emoji">🎓</span>
-                    <span>Start Training</span>
-                </button>
-                <button class="event-btn training-past" onclick="openAddPastTrainingModal()">
-                    <span class="emoji">📝</span>
-                    <span>Add Past Session</span>
+                    <span>Log Training</span>
                 </button>
             </div>
 
@@ -1515,10 +1346,6 @@
                     <div class="summary-card training">
                         <div class="value" id="avg-training-sessions">0</div>
                         <div class="label">Sessions/Day</div>
-                    </div>
-                    <div class="summary-card training">
-                        <div class="value" id="total-training-mins">0m</div>
-                        <div class="label">Training Mins</div>
                     </div>
                 </div>
             </div>
@@ -1633,39 +1460,14 @@
         </div>
     </div>
 
-    <!-- Start Training Modal -->
-    <div class="modal-overlay" id="start-training-modal">
-        <div class="modal">
-            <h3>🎓 Start Training</h3>
-            <label>What are you training?</label>
-            <div class="training-type-grid" id="start-training-type-grid"></div>
-            <div class="modal-buttons">
-                <button class="modal-btn cancel" onclick="closeStartTrainingModal()">Cancel</button>
-                <button class="modal-btn save" onclick="confirmStartTraining()">Start Timer ▶</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Stop / Log Training Modal -->
+    <!-- Log Training Modal -->
     <div class="modal-overlay" id="stop-training-modal">
         <div class="modal">
             <h3>🎓 Log Training Session</h3>
-            <div class="training-summary-card" id="training-summary-card">
-                <div>
-                    <div class="summary-duration" id="stop-training-duration">--</div>
-                    <div class="summary-type" id="stop-training-type-label">Be Alone</div>
-                </div>
-            </div>
             <label>Training Type</label>
             <div class="training-type-grid" id="stop-training-type-grid"></div>
-            <div id="training-duration-pills-section" class="hidden">
-                <label>Duration</label>
-                <div class="duration-pills">
-                    <button class="duration-pill" onclick="selectTrainingDuration(5)">5 min</button>
-                    <button class="duration-pill" onclick="selectTrainingDuration(10)">10 min</button>
-                    <button class="duration-pill" onclick="selectTrainingDuration(15)">15 min</button>
-                </div>
-            </div>
+            <label>Date & Time</label>
+            <input type="datetime-local" id="training-timestamp">
             <label>How did it go?</label>
             <div class="outcome-row" id="training-outcome-row">
                 <button class="outcome-btn great" onclick="selectOutcome('great')">✅ Great</button>
@@ -1755,17 +1557,11 @@
         let trainingChartOffset = 0;
 
         // Training state
-        let trainingUpdateInterval = null;
-        let activeTrainingUnsubscribe = null;
         let trainingChart = null;
-        let selectedStartTrainingType = 'be-alone';
         let selectedStopTrainingType = 'be-alone';
         let selectedOutcome = 'okay';
         let selectedEditOutcome = 'okay';
         let selectedEditTrainingType = 'be-alone';
-        let frozenTrainingElapsedMs = null;
-        let isManualTrainingEntry = false;
-        let selectedManualDuration = null;
 
         // Connection status
         function updateConnectionStatus(online) {
@@ -1979,14 +1775,6 @@
                 const minutes = totalMinutes % 60;
                 document.getElementById('edit-sleep-hours').value = hours;
                 document.getElementById('edit-sleep-minutes').value = minutes;
-            } else if (event.type === 'training' && event.trainingDuration) {
-                durationSection.classList.remove('hidden');
-                timestampLabel.textContent = 'Session End Time';
-                const totalMinutes = Math.floor(event.trainingDuration / 60000);
-                const hours = Math.floor(totalMinutes / 60);
-                const minutes = totalMinutes % 60;
-                document.getElementById('edit-sleep-hours').value = hours;
-                document.getElementById('edit-sleep-minutes').value = minutes;
             } else {
                 durationSection.classList.add('hidden');
                 timestampLabel.textContent = 'Date & Time';
@@ -2048,21 +1836,6 @@
 
                 // Handle training event
                 if (editingEvent.type === 'training') {
-                    const hours = parseInt(document.getElementById('edit-sleep-hours').value) || 0;
-                    const minutes = parseInt(document.getElementById('edit-sleep-minutes').value) || 0;
-
-                    if (hours === 0 && minutes === 0) {
-                        showToast('Please enter a duration');
-                        return;
-                    }
-
-                    const durationMs = (hours * 60 + minutes) * 60 * 1000;
-                    const trainingEnd = newTimestamp;
-                    const trainingStart = new Date(trainingEnd.getTime() - durationMs);
-
-                    updateData.trainingDuration = durationMs;
-                    updateData.trainingEnd = firebase.firestore.Timestamp.fromDate(trainingEnd);
-                    updateData.trainingStart = firebase.firestore.Timestamp.fromDate(trainingStart);
                     updateData.trainingType = selectedEditTrainingType;
                     updateData.outcome = selectedEditOutcome;
                 }
@@ -2369,16 +2142,9 @@
             ).join('');
         }
 
-        function selectStartTrainingType(typeId) {
-            selectedStartTrainingType = typeId;
-            renderTrainingTypeGrid('start-training-type-grid', typeId, 'selectStartTrainingType');
-        }
-
         function selectStopTrainingType(typeId) {
             selectedStopTrainingType = typeId;
             renderTrainingTypeGrid('stop-training-type-grid', typeId, 'selectStopTrainingType');
-            const info = getTrainingTypeInfo(typeId);
-            document.getElementById('stop-training-type-label').textContent = `${info.emoji} ${info.label}`;
         }
 
         function selectOutcome(outcome) {
@@ -2389,175 +2155,16 @@
             document.querySelector(`#training-outcome-row .outcome-btn.${outcome}`).classList.add('selected');
         }
 
-        function selectTrainingDuration(minutes) {
-            selectedManualDuration = minutes * 60 * 1000;
-            document.querySelectorAll('.duration-pill').forEach(p => p.classList.remove('selected'));
-            event.target.classList.add('selected');
-            document.getElementById('stop-training-duration').textContent = `${minutes}m`;
-        }
-
-        function openStartTrainingModal() {
-            if (localStorage.getItem('activeTrainingStart')) {
-                showToast('🎓 Session already in progress!');
-                return;
-            }
-            selectedStartTrainingType = 'be-alone';
-            renderTrainingTypeGrid('start-training-type-grid', selectedStartTrainingType, 'selectStartTrainingType');
-            document.getElementById('start-training-modal').classList.add('show');
-        }
-
-        function closeStartTrainingModal() {
-            document.getElementById('start-training-modal').classList.remove('show');
-        }
-
-        async function confirmStartTraining() {
-            closeStartTrainingModal();
-            await startTraining(selectedStartTrainingType);
-        }
-
-        async function startTraining(trainingType) {
-            if (localStorage.getItem('activeTrainingStart')) {
-                showToast('🎓 Session already in progress!');
-                return;
-            }
-
-            const now = new Date();
-            const startTimestamp = now.getTime();
-
-            localStorage.setItem('activeTrainingStart', startTimestamp.toString());
-            localStorage.setItem('activeTrainingType', trainingType);
-            showActiveTrainingBanner(startTimestamp, trainingType);
-
-            try {
-                await db.collection('state').doc('activeTraining').set({
-                    startTime: firebase.firestore.Timestamp.fromDate(now),
-                    trainingType: trainingType,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                await db.waitForPendingWrites();
-                showToast('🎓 Training started!');
-            } catch (error) {
-                console.error('Error starting training:', error);
-                showToast('🎓 Training started (syncing...)');
-            }
-        }
-
-        function showActiveTrainingBanner(startTimestamp, trainingType) {
-            const banner = document.getElementById('active-training-banner');
-            const startTimeEl = document.getElementById('training-start-time');
-            const typeLabel = document.getElementById('training-banner-type');
-            const startDate = new Date(startTimestamp);
-
-            startTimeEl.textContent = startDate.toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-            });
-
-            const info = getTrainingTypeInfo(trainingType);
-            typeLabel.textContent = `${info.emoji} ${info.label}`;
-
-            banner.classList.add('show');
-
-            const trainBtn = document.getElementById('start-training-btn');
-            trainBtn.classList.add('stop-training');
-            trainBtn.onclick = openStopTrainingModal;
-            trainBtn.querySelector('.emoji').textContent = '⏹';
-            trainBtn.querySelector('span:last-child').textContent = 'Stop & Log';
-
-            updateTrainingElapsed(startTimestamp);
-            if (trainingUpdateInterval) clearInterval(trainingUpdateInterval);
-            trainingUpdateInterval = setInterval(() => updateTrainingElapsed(startTimestamp), 1000);
-        }
-
-        function updateTrainingElapsed(startTimestamp) {
-            const now = Date.now();
-            const elapsedMs = now - startTimestamp;
-            const totalSecs = Math.floor(elapsedMs / 1000);
-            const mins = Math.floor(totalSecs / 60);
-            const secs = totalSecs % 60;
-
-            let elapsedText;
-            if (mins >= 60) {
-                const hours = Math.floor(mins / 60);
-                const remainMins = mins % 60;
-                elapsedText = `${hours}h ${remainMins}m`;
-            } else {
-                elapsedText = `${mins}:${secs.toString().padStart(2, '0')}`;
-            }
-
-            document.getElementById('training-elapsed').textContent = elapsedText;
-        }
-
-        function hideActiveTrainingBanner() {
-            const banner = document.getElementById('active-training-banner');
-            banner.classList.remove('show');
-
-            const trainBtn = document.getElementById('start-training-btn');
-            trainBtn.classList.remove('stop-training');
-            trainBtn.onclick = openStartTrainingModal;
-            trainBtn.querySelector('.emoji').textContent = '🎓';
-            trainBtn.querySelector('span:last-child').textContent = 'Start Training';
-
-            if (trainingUpdateInterval) {
-                clearInterval(trainingUpdateInterval);
-                trainingUpdateInterval = null;
-            }
-        }
-
-        function openStopTrainingModal() {
-            const startTimestamp = localStorage.getItem('activeTrainingStart');
-            if (!startTimestamp) {
-                showToast('No active training to stop');
-                return;
-            }
-
-            // Freeze the timer
-            frozenTrainingElapsedMs = Date.now() - parseInt(startTimestamp);
-            if (trainingUpdateInterval) {
-                clearInterval(trainingUpdateInterval);
-                trainingUpdateInterval = null;
-            }
-
-            isManualTrainingEntry = false;
-            selectedManualDuration = null;
-
-            const activeType = localStorage.getItem('activeTrainingType') || 'be-alone';
-            selectedStopTrainingType = activeType;
-            selectedOutcome = 'okay';
-
-            // Set frozen duration display
-            document.getElementById('stop-training-duration').textContent = formatDuration(frozenTrainingElapsedMs);
-            const info = getTrainingTypeInfo(activeType);
-            document.getElementById('stop-training-type-label').textContent = `${info.emoji} ${info.label}`;
-
-            renderTrainingTypeGrid('stop-training-type-grid', activeType, 'selectStopTrainingType');
-            document.getElementById('training-duration-pills-section').classList.add('hidden');
-
-            // Reset outcome selection
-            document.querySelectorAll('#training-outcome-row .outcome-btn').forEach(btn => btn.classList.remove('selected'));
-            document.querySelector('#training-outcome-row .outcome-btn.okay').classList.add('selected');
-
-            document.getElementById('training-notes').value = '';
-            document.getElementById('stop-training-modal').classList.add('show');
-        }
-
         function openAddPastTrainingModal() {
-            isManualTrainingEntry = true;
-            frozenTrainingElapsedMs = null;
-            selectedManualDuration = null;
             selectedStopTrainingType = 'be-alone';
             selectedOutcome = 'okay';
 
-            document.getElementById('stop-training-duration').textContent = '--';
-            const info = getTrainingTypeInfo('be-alone');
-            document.getElementById('stop-training-type-label').textContent = `${info.emoji} ${info.label}`;
-
             renderTrainingTypeGrid('stop-training-type-grid', 'be-alone', 'selectStopTrainingType');
-            document.getElementById('training-duration-pills-section').classList.remove('hidden');
 
-            // Reset duration pills
-            document.querySelectorAll('.duration-pill').forEach(p => p.classList.remove('selected'));
+            // Set timestamp to now
+            const now = new Date();
+            const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            document.getElementById('training-timestamp').value = localIso;
 
             // Reset outcome selection
             document.querySelectorAll('#training-outcome-row .outcome-btn').forEach(btn => btn.classList.remove('selected'));
@@ -2569,66 +2176,28 @@
 
         function cancelStopTrainingModal() {
             document.getElementById('stop-training-modal').classList.remove('show');
-
-            // If we had an active session, resume the timer
-            if (!isManualTrainingEntry) {
-                const startTimestamp = localStorage.getItem('activeTrainingStart');
-                if (startTimestamp) {
-                    const activeType = localStorage.getItem('activeTrainingType') || 'be-alone';
-                    updateTrainingElapsed(parseInt(startTimestamp));
-                    if (trainingUpdateInterval) clearInterval(trainingUpdateInterval);
-                    trainingUpdateInterval = setInterval(() => updateTrainingElapsed(parseInt(startTimestamp)), 1000);
-                }
-            }
-            frozenTrainingElapsedMs = null;
         }
 
         async function saveTraining() {
-            let durationMs, startTime, endTime;
-
-            if (isManualTrainingEntry) {
-                if (!selectedManualDuration) {
-                    showToast('Please select a duration');
-                    return;
-                }
-                durationMs = selectedManualDuration;
-                endTime = new Date();
-                startTime = new Date(endTime.getTime() - durationMs);
-            } else {
-                const startTimestamp = localStorage.getItem('activeTrainingStart');
-                if (!startTimestamp) {
-                    showToast('No active training to save');
-                    return;
-                }
-                startTime = new Date(parseInt(startTimestamp));
-                endTime = new Date();
-                durationMs = frozenTrainingElapsedMs || (endTime.getTime() - startTime.getTime());
+            const timestampInput = document.getElementById('training-timestamp').value;
+            if (!timestampInput) {
+                showToast('Please select a date & time');
+                return;
             }
-
+            const eventTime = new Date(timestampInput);
             const comment = document.getElementById('training-notes').value.trim();
 
-            // Clear local state immediately
-            localStorage.removeItem('activeTrainingStart');
-            localStorage.removeItem('activeTrainingType');
-            hideActiveTrainingBanner();
             document.getElementById('stop-training-modal').classList.remove('show');
 
             try {
                 await db.collection('events').add({
                     type: 'training',
-                    timestamp: firebase.firestore.Timestamp.fromDate(endTime),
-                    trainingStart: firebase.firestore.Timestamp.fromDate(startTime),
-                    trainingEnd: firebase.firestore.Timestamp.fromDate(endTime),
-                    trainingDuration: durationMs,
+                    timestamp: firebase.firestore.Timestamp.fromDate(eventTime),
                     trainingType: selectedStopTrainingType,
                     outcome: selectedOutcome,
                     comment: comment,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-
-                if (!isManualTrainingEntry) {
-                    await db.collection('state').doc('activeTraining').delete();
-                }
                 await db.waitForPendingWrites();
 
                 const outcomeEmoji = selectedOutcome === 'great' ? '✅' : selectedOutcome === 'okay' ? '〰️' : '❌';
@@ -2637,52 +2206,8 @@
                 console.error('Error saving training:', error);
                 showToast('🎓 Session saved (syncing...)');
             }
-
-            frozenTrainingElapsedMs = null;
-            isManualTrainingEntry = false;
         }
 
-        // Cross-device sync for active training
-        function subscribeToActiveTraining() {
-            activeTrainingUnsubscribe = db.collection('state').doc('activeTraining')
-                .onSnapshot({ includeMetadataChanges: true }, (doc) => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        if (data && data.startTime) {
-                            let startTimestamp;
-                            if (data.startTime.toMillis) {
-                                startTimestamp = data.startTime.toMillis();
-                            } else if (data.startTime.seconds) {
-                                startTimestamp = data.startTime.seconds * 1000;
-                            } else {
-                                startTimestamp = data.startTime;
-                            }
-                            const trainingType = data.trainingType || 'be-alone';
-
-                            localStorage.setItem('activeTrainingStart', startTimestamp.toString());
-                            localStorage.setItem('activeTrainingType', trainingType);
-                            showActiveTrainingBanner(startTimestamp, trainingType);
-                        }
-                    } else {
-                        if (!doc.metadata.fromCache) {
-                            localStorage.removeItem('activeTrainingStart');
-                            localStorage.removeItem('activeTrainingType');
-                            hideActiveTrainingBanner();
-                        }
-                    }
-                }, (error) => {
-                    console.error('Active training subscription error:', error);
-                    checkActiveTrainingLocal();
-                });
-        }
-
-        function checkActiveTrainingLocal() {
-            const startTimestamp = localStorage.getItem('activeTrainingStart');
-            if (startTimestamp) {
-                const trainingType = localStorage.getItem('activeTrainingType') || 'be-alone';
-                showActiveTrainingBanner(parseInt(startTimestamp), trainingType);
-            }
-        }
 
         // Edit modal training support
         function selectEditTrainingType(typeId) {
@@ -2782,9 +2307,6 @@
             let durationHtml = '';
             if (event.type === 'sleep' && event.sleepDuration) {
                 durationHtml = `<div class="duration">⏱ ${formatDuration(event.sleepDuration)}</div>`;
-            }
-            if (event.type === 'training' && event.trainingDuration) {
-                durationHtml = `<div class="duration">⏱ ${formatDuration(event.trainingDuration)}</div>`;
             }
 
             let trainingChipsHtml = '';
@@ -2972,8 +2494,7 @@
             const headers = ['Date', 'Time', 'Event Type', 'Duration (minutes)', 'Training Type', 'Outcome', 'Comment'];
             const rows = events.map(e => {
                 const date = getTimestamp(e);
-                const duration = e.sleepDuration ? Math.round(e.sleepDuration / 60000) :
-                    e.trainingDuration ? Math.round(e.trainingDuration / 60000) : '';
+                const duration = e.sleepDuration ? Math.round(e.sleepDuration / 60000) : '';
                 const trainingType = e.trainingType ? getTrainingTypeInfo(e.trainingType).label : '';
                 const outcome = e.outcome || '';
                 const comment = e.comment ? `"${e.comment.replace(/"/g, '""')}"` : '';
@@ -3714,16 +3235,6 @@
             const avgTrainingSessions = completedDayCount > 0 ? Math.round(trainingEventsExToday.length / completedDayCount * 10) / 10 : 0;
             document.getElementById('avg-training-sessions').textContent = avgTrainingSessions;
 
-            const totalTrainingMs = trainingEvents14d.reduce((sum, e) => sum + (e.trainingDuration || 0), 0);
-            const totalTrainingMins = Math.floor(totalTrainingMs / 60000);
-            if (totalTrainingMins >= 60) {
-                const th = Math.floor(totalTrainingMins / 60);
-                const tm = totalTrainingMins % 60;
-                document.getElementById('total-training-mins').textContent = `${th}h ${tm}m`;
-            } else {
-                document.getElementById('total-training-mins').textContent = `${totalTrainingMins}m`;
-            }
-
             // Update activity pattern chart (7 days)
             createActivityPatternChart(activityDays, activityLabels);
 
@@ -3888,7 +3399,6 @@
         // Initialize
         updateConnectionStatus(navigator.onLine);
         checkActiveSleep(); // Show banner from localStorage immediately while waiting for Firestore
-        checkActiveTrainingLocal(); // Show training banner from localStorage immediately
         setupMidnightCheck();
 
         // Wait for persistence to be ready before subscribing to Firestore,
@@ -3896,7 +3406,6 @@
         firestoreReady.then(() => {
             subscribeToEvents();
             subscribeToActiveSleep(); // Cross-device sync for active sleep
-            subscribeToActiveTraining(); // Cross-device sync for active training
         });
 
         // Update UI and stats every minute (keeps relative times accurate)
