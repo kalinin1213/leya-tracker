@@ -1585,7 +1585,6 @@
         function subscribeToEvents() {
             db.collection('events')
                 .orderBy('timestamp', 'desc')
-                .limit(500)
                 .onSnapshot((snapshot) => {
                     events = snapshot.docs.map(doc => ({
                         id: doc.id,
