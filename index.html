@@ -582,7 +582,9 @@
 
         .modal textarea {
             resize: none;
-            height: 80px;
+            min-height: 80px;
+            max-height: 200px;
+            overflow-y: auto;
         }
 
         .modal input:focus,
@@ -1728,7 +1730,8 @@
                 .toISOString().slice(0, 16);
             document.getElementById('new-timestamp').value = localDateTime;
             document.getElementById('new-comment-input').value = '';
-            
+            document.getElementById('new-comment-input').style.height = '';
+
             document.getElementById('new-event-modal').classList.add('show');
         }
 
@@ -1762,6 +1765,7 @@
                 .toISOString().slice(0, 16);
             document.getElementById('edit-timestamp').value = localDateTime;
             document.getElementById('edit-comment').value = event.comment || '';
+            setTimeout(() => autoResizeTextarea(document.getElementById('edit-comment')), 0);
 
             // Handle sleep event duration fields
             const durationSection = document.getElementById('edit-duration-section');
@@ -1882,6 +1886,7 @@
             document.getElementById('sleep-hours').value = '';
             document.getElementById('sleep-minutes').value = '';
             document.getElementById('sleep-comment').value = '';
+            document.getElementById('sleep-comment').style.height = '';
             document.getElementById('manual-sleep-modal').classList.add('show');
         }
 
@@ -2170,6 +2175,7 @@
             document.querySelector('#training-outcome-row .outcome-btn.okay').classList.add('selected');
 
             document.getElementById('training-notes').value = '';
+            document.getElementById('training-notes').style.height = '';
             document.getElementById('stop-training-modal').classList.add('show');
         }
 
@@ -3412,6 +3418,17 @@
             updateUI();
             checkReminders();
         }, 60000);
+
+        // Auto-resize textareas as user types
+        function autoResizeTextarea(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+        }
+        document.querySelectorAll('.modal textarea').forEach(textarea => {
+            textarea.addEventListener('input', function() {
+                autoResizeTextarea(this);
+            });
+        });
 
         // Register service worker
         if ('serviceWorker' in navigator) {
