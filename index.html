@@ -1082,6 +1082,64 @@
             transition: width 0.3s ease;
         }
 
+        .training-daily-breakdown {
+            margin-bottom: 16px;
+        }
+
+        .training-day-row {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .training-day-row:last-child {
+            border-bottom: none;
+        }
+
+        .training-day-date {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            min-width: 52px;
+            flex-shrink: 0;
+        }
+
+        .training-day-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .training-chip {
+            font-size: 13px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 8px;
+            padding: 2px 7px;
+            white-space: nowrap;
+        }
+
+        .training-chip-count {
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .training-day-empty {
+            font-size: 12px;
+            color: rgba(255,255,255,0.2);
+            flex: 1;
+        }
+
+        .training-day-total {
+            font-size: 12px;
+            color: rgba(255,255,255,0.35);
+            min-width: 20px;
+            text-align: right;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+
         .outcomes-bar {
             display: flex;
             height: 28px;
@@ -1278,6 +1336,7 @@
                 <div class="chart-container">
                     <canvas id="trainingChart"></canvas>
                 </div>
+                <div class="training-daily-breakdown" id="training-daily-breakdown"></div>
                 <div class="training-type-breakdown" id="training-type-breakdown"></div>
                 <div id="training-outcomes-section">
                     <div class="outcomes-bar" id="training-outcomes-bar"></div>
@@ -3412,11 +3471,64 @@
                 });
             }
 
+            // Daily breakdown
+            updateTrainingDailyBreakdown(trainingDays);
+
             // Type breakdown
             updateTrainingTypeBreakdown(trainingDays);
 
             // Outcomes bar
             updateTrainingOutcomesBar(trainingDays);
+        }
+
+        function updateTrainingDailyBreakdown(days) {
+            const container = document.getElementById('training-daily-breakdown');
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+            // Show most recent day first
+            const reversedDays = [...days].reverse();
+
+            const rows = reversedDays.map(day => {
+                const dayEvents = events.filter(e =>
+                    e.type === 'training' &&
+                    getTimestamp(e).toDateString() === day.toDateString()
+                );
+
+                const dayLabel = `${dayNames[day.getDay()]} ${day.getMonth() + 1}/${day.getDate()}`;
+                const total = dayEvents.length;
+
+                if (total === 0) {
+                    return `<div class="training-day-row">
+                        <div class="training-day-date">${dayLabel}</div>
+                        <div class="training-day-empty">&mdash;</div>
+                        <div class="training-day-total">0</div>
+                    </div>`;
+                }
+
+                // Group by training type
+                const typeCounts = {};
+                dayEvents.forEach(e => {
+                    const t = e.trainingType || 'other';
+                    typeCounts[t] = (typeCounts[t] || 0) + 1;
+                });
+
+                // Sort by count descending
+                const sorted = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+
+                const chips = sorted.map(([typeId, count]) => {
+                    const info = getTrainingTypeInfo(typeId);
+                    const countLabel = count > 1 ? `<span class="training-chip-count">&times;${count}</span>` : '';
+                    return `<span class="training-chip">${info.emoji}${countLabel}</span>`;
+                }).join('');
+
+                return `<div class="training-day-row">
+                    <div class="training-day-date">${dayLabel}</div>
+                    <div class="training-day-chips">${chips}</div>
+                    <div class="training-day-total">${total}</div>
+                </div>`;
+            }).join('');
+
+            container.innerHTML = rows;
         }
 
         function updateTrainingTypeBreakdown(days) {
