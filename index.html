@@ -1140,45 +1140,8 @@
             margin-left: 8px;
         }
 
-        .outcomes-bar {
-            display: flex;
-            height: 28px;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 8px;
-        }
-
-        .outcomes-bar .bar-segment {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            font-weight: 600;
-            transition: width 0.3s ease;
-            min-width: 0;
-        }
-
-        .outcomes-bar .bar-great {
-            background: rgba(52, 211, 153, 0.4);
-            color: #34d399;
-        }
-
-        .outcomes-bar .bar-okay {
-            background: rgba(251, 191, 36, 0.4);
-            color: #fbbf24;
-        }
-
-        .outcomes-bar .bar-struggled {
-            background: rgba(248, 113, 113, 0.4);
-            color: #f87171;
-        }
-
-        .outcomes-legend {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            font-size: 11px;
-            color: rgba(255,255,255,0.5);
+        .training-chip-outcome {
+            font-size: 10px;
         }
 
         .summary-card.training .value {
@@ -1338,14 +1301,6 @@
                 </div>
                 <div class="training-daily-breakdown" id="training-daily-breakdown"></div>
                 <div class="training-type-breakdown" id="training-type-breakdown"></div>
-                <div id="training-outcomes-section">
-                    <div class="outcomes-bar" id="training-outcomes-bar"></div>
-                    <div class="outcomes-legend">
-                        <span>✅ Great</span>
-                        <span>〰️ Okay</span>
-                        <span>❌ Struggled</span>
-                    </div>
-                </div>
             </div>
 
             <div class="stats-section">
@@ -3556,7 +3511,6 @@
             updateTrainingTypeBreakdown(trainingDays);
 
             // Outcomes bar
-            updateTrainingOutcomesBar(trainingDays);
         }
 
         function updateTrainingDailyBreakdown(days) {
@@ -3583,20 +3537,25 @@
                     </div>`;
                 }
 
-                // Group by training type
-                const typeCounts = {};
+                // Group by training type, tracking outcomes
+                const typeOutcomes = {};
                 dayEvents.forEach(e => {
                     const t = e.trainingType || 'other';
-                    typeCounts[t] = (typeCounts[t] || 0) + 1;
+                    if (!typeOutcomes[t]) typeOutcomes[t] = [];
+                    typeOutcomes[t].push(e.outcome || 'okay');
                 });
 
                 // Sort by count descending
-                const sorted = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+                const sorted = Object.entries(typeOutcomes).sort((a, b) => b[1].length - a[1].length);
 
-                const chips = sorted.map(([typeId, count]) => {
+                const outcomeIcons = { great: '✅', okay: '〰️', struggled: '❌' };
+                const outcomeOrder = ['great', 'okay', 'struggled'];
+
+                const chips = sorted.map(([typeId, outcomes]) => {
                     const info = getTrainingTypeInfo(typeId);
-                    const countLabel = count > 1 ? `<span class="training-chip-count">&times;${count}</span>` : '';
-                    return `<span class="training-chip">${info.emoji}${countLabel}</span>`;
+                    const sortedOutcomes = [...outcomes].sort((a, b) => outcomeOrder.indexOf(a) - outcomeOrder.indexOf(b));
+                    const icons = sortedOutcomes.map(o => `<span class="training-chip-outcome">${outcomeIcons[o] || outcomeIcons.okay}</span>`).join('');
+                    return `<span class="training-chip">${info.emoji}${icons}</span>`;
                 }).join('');
 
                 return `<div class="training-day-row">
@@ -3648,36 +3607,6 @@
             }).join('');
         }
 
-        function updateTrainingOutcomesBar(days) {
-            const container = document.getElementById('training-outcomes-bar');
-            const dayTrainingEvents = events.filter(e => {
-                if (e.type !== 'training') return false;
-                const dateStr = getTimestamp(e).toDateString();
-                return days.some(d => d.toDateString() === dateStr);
-            });
-
-            const counts = { great: 0, okay: 0, struggled: 0 };
-            dayTrainingEvents.forEach(e => {
-                const o = e.outcome || 'okay';
-                if (counts[o] !== undefined) counts[o]++;
-            });
-
-            const total = counts.great + counts.okay + counts.struggled;
-            if (total === 0) {
-                container.innerHTML = '';
-                return;
-            }
-
-            const pctGreat = Math.round((counts.great / total) * 100);
-            const pctOkay = Math.round((counts.okay / total) * 100);
-            const pctStruggled = 100 - pctGreat - pctOkay;
-
-            container.innerHTML = `
-                ${pctGreat > 0 ? `<div class="bar-segment bar-great" style="width: ${pctGreat}%">${counts.great}</div>` : ''}
-                ${pctOkay > 0 ? `<div class="bar-segment bar-okay" style="width: ${pctOkay}%">${counts.okay}</div>` : ''}
-                ${pctStruggled > 0 ? `<div class="bar-segment bar-struggled" style="width: ${pctStruggled}%">${counts.struggled}</div>` : ''}
-            `;
-        }
 
         // Close modals on outside click
         document.querySelectorAll('.modal-overlay').forEach(overlay => {
