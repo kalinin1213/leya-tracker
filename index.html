@@ -1303,7 +1303,7 @@
             </div>
 
             <div class="stats-section">
-                <div class="stats-section-title">Sleep</div>
+                <div class="stats-section-title">Sleep <span id="sleep-trend-indicator" style="font-size: 0.75em; margin-left: 8px; font-weight: 400;"></span></div>
                 <div class="chart-nav">
                     <button class="chart-nav-btn" onclick="navigateChart('sleep', -1)">&#8249;</button>
                     <span class="chart-nav-label" id="sleep-nav-label"></span>
@@ -2790,6 +2790,60 @@
             }
         };
 
+        // Compute linear regression for an array of values, skipping zero entries
+        function computeLinearRegression(data, excludeLast) {
+            const points = [];
+            const end = excludeLast ? data.length - 1 : data.length;
+            for (let i = 0; i < end; i++) {
+                if (data[i] > 0) points.push({ x: i, y: data[i] });
+            }
+            if (points.length < 3) return null;
+            const n = points.length;
+            const sumX = points.reduce((s, p) => s + p.x, 0);
+            const sumY = points.reduce((s, p) => s + p.y, 0);
+            const sumXY = points.reduce((s, p) => s + p.x * p.y, 0);
+            const sumXX = points.reduce((s, p) => s + p.x * p.x, 0);
+            const denom = n * sumXX - sumX * sumX;
+            if (denom === 0) return null;
+            const slope = (n * sumXY - sumX * sumY) / denom;
+            const intercept = (sumY - slope * sumX) / n;
+            return { slope, intercept, firstIndex: points[0].x, lastIndex: points[points.length - 1].x };
+        }
+
+        const sleepTrendLinePlugin = {
+            id: 'sleepTrendLine',
+            afterDatasetsDraw(chart) {
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea) return;
+
+                const data = chart.data.datasets[0].data;
+                const labels = chart.data.labels;
+
+                // Exclude today (incomplete) same as average plugin
+                const today = new Date();
+                const todayLabel = `${today.getMonth() + 1}/${today.getDate()}`;
+                const excludeLast = labels.length > 0 && labels[labels.length - 1] === todayLabel;
+
+                const reg = computeLinearRegression(data, excludeLast);
+                if (!reg) return;
+
+                const x1 = scales.x.getPixelForValue(reg.firstIndex);
+                const x2 = scales.x.getPixelForValue(reg.lastIndex);
+                const y1 = scales.y.getPixelForValue(reg.intercept + reg.slope * reg.firstIndex);
+                const y2 = scales.y.getPixelForValue(reg.intercept + reg.slope * reg.lastIndex);
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(167, 139, 250, 0.9)';
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([]);
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+                ctx.restore();
+            }
+        };
+
         const currentTimeLinePlugin = {
             id: 'currentTimeLine',
             afterDatasetsDraw(chart) {
@@ -3188,6 +3242,30 @@
                 return Math.round(sleepMs / 3600000 * 10) / 10;
             });
 
+            // Update sleep trend indicator
+            {
+                const today = new Date();
+                const todayLabel = `${today.getMonth() + 1}/${today.getDate()}`;
+                const excludeLast = sleepLabels.length > 0 && sleepLabels[sleepLabels.length - 1] === todayLabel;
+                const reg = computeLinearRegression(sleepData, excludeLast);
+                const indicator = document.getElementById('sleep-trend-indicator');
+                if (reg) {
+                    const hrsPerWeek = Math.round(Math.abs(reg.slope * 7) * 10) / 10;
+                    if (Math.abs(reg.slope * 7) < 0.1) {
+                        indicator.textContent = '\u2192 Stable';
+                        indicator.style.color = 'rgba(255,255,255,0.5)';
+                    } else if (reg.slope > 0) {
+                        indicator.textContent = `\u2197 +${hrsPerWeek}h/wk`;
+                        indicator.style.color = '#4ade80';
+                    } else {
+                        indicator.textContent = `\u2198 -${hrsPerWeek}h/wk`;
+                        indicator.style.color = '#f87171';
+                    }
+                } else {
+                    indicator.textContent = '';
+                }
+            }
+
             // Accidents: 14 days with offset
             const accidentsDays = getDaysRange(14, accidentsChartOffset);
             const accidentsLabels = makeLabels(accidentsDays);
@@ -3245,7 +3323,7 @@
                             }
                         }
                     },
-                    plugins: [sleepAverageLinePlugin]
+                    plugins: [sleepAverageLinePlugin, sleepTrendLinePlugin]
                 });
             }
 
