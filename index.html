@@ -1224,7 +1224,7 @@
                     <span class="emoji">🍖</span>
                     <span>Meal</span>
                 </button>
-                <button class="event-btn sleep-start" id="start-sleep-btn" onclick="startSleep()">
+                <button class="event-btn sleep-start" id="start-sleep-btn">
                     <span class="emoji">🛏️</span>
                     <span>Start Sleep</span>
                 </button>
@@ -1446,6 +1446,19 @@
             <div class="modal-buttons">
                 <button class="modal-btn cancel" onclick="closeManualSleepModal()">Cancel</button>
                 <button class="modal-btn save" onclick="saveManualSleep()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sleep Start Time Modal (for long press on Start Sleep) -->
+    <div class="modal-overlay" id="sleep-start-modal">
+        <div class="modal">
+            <h3>🛏️ Start Sleep</h3>
+            <label>When did the sleep start?</label>
+            <input type="datetime-local" id="sleep-start-input">
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeSleepStartModal()">Cancel</button>
+                <button class="modal-btn save" onclick="saveSleepStartTime()">Start</button>
             </div>
         </div>
     </div>
@@ -1717,6 +1730,110 @@
             });
         });
 
+        // Set up sleep button with long press support
+        (function() {
+            const sleepBtn = document.getElementById('start-sleep-btn');
+            let sleepLongPressTimer = null;
+            let sleepLongPressTriggered = false;
+
+            function handleSleepTap() {
+                if (sleepLongPressTriggered) {
+                    sleepLongPressTriggered = false;
+                    return;
+                }
+                if (sleepLongPressTimer) {
+                    clearTimeout(sleepLongPressTimer);
+                    sleepLongPressTimer = null;
+                }
+                // Use current onclick (may be startSleep or stopSleep)
+                if (sleepBtn.classList.contains('stop-sleep')) {
+                    stopSleep();
+                } else {
+                    startSleep();
+                }
+            }
+
+            function handleSleepLongPress() {
+                // Only allow long press when sleep is NOT active
+                if (sleepBtn.classList.contains('stop-sleep')) return;
+                sleepLongPressTriggered = true;
+                openSleepStartModal();
+            }
+
+            function clearSleepTimer() {
+                if (sleepLongPressTimer) {
+                    clearTimeout(sleepLongPressTimer);
+                    sleepLongPressTimer = null;
+                }
+            }
+
+            sleepBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                handleSleepTap();
+            });
+
+            sleepBtn.addEventListener('touchstart', (e) => {
+                sleepLongPressTriggered = false;
+                sleepLongPressTimer = setTimeout(() => {
+                    handleSleepLongPress();
+                    sleepLongPressTimer = null;
+                }, 500);
+            }, { passive: true });
+
+            sleepBtn.addEventListener('touchend', clearSleepTimer);
+            sleepBtn.addEventListener('touchmove', clearSleepTimer);
+
+            sleepBtn.addEventListener('mousedown', (e) => {
+                sleepLongPressTriggered = false;
+                sleepLongPressTimer = setTimeout(() => {
+                    handleSleepLongPress();
+                    sleepLongPressTimer = null;
+                }, 500);
+            });
+
+            sleepBtn.addEventListener('mouseup', clearSleepTimer);
+            sleepBtn.addEventListener('mouseleave', clearSleepTimer);
+        })();
+
+        // Sleep Start Modal (for long press - pick custom start time)
+        function openSleepStartModal() {
+            if (localStorage.getItem('activeSleepStart')) {
+                showToast('Sleep is already in progress!');
+                return;
+            }
+            const now = new Date();
+            const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+                .toISOString().slice(0, 16);
+            document.getElementById('sleep-start-input').value = localDateTime;
+            document.getElementById('sleep-start-modal').classList.add('show');
+        }
+
+        function closeSleepStartModal() {
+            document.getElementById('sleep-start-modal').classList.remove('show');
+        }
+
+        function saveSleepStartTime() {
+            const input = document.getElementById('sleep-start-input').value;
+            if (!input) {
+                showToast('Please select a start time');
+                return;
+            }
+            const customTime = new Date(input);
+            if (customTime > new Date()) {
+                showToast('Start time cannot be in the future');
+                return;
+            }
+            closeSleepStartModal();
+            startSleep(customTime);
+        }
+
+        // Close sleep start modal on overlay click
+        document.getElementById('sleep-start-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'sleep-start-modal') {
+                closeSleepStartModal();
+            }
+        });
+
         // New Event Modal (for long press - now includes timestamp)
         function openNewEventModal(eventType) {
             pendingEvent = eventType;
@@ -1980,14 +2097,14 @@
             }
         }
 
-        async function startSleep() {
+        async function startSleep(customStartTime) {
             // Check if sleep is already active (local check for immediate feedback)
             if (localStorage.getItem('activeSleepStart')) {
                 showToast('Sleep is already in progress!');
                 return;
             }
 
-            const now = new Date();
+            const now = customStartTime || new Date();
             const startTimestamp = now.getTime();
 
             // Set localStorage immediately for reliability (don't rely solely on onSnapshot)
@@ -2029,7 +2146,6 @@
             const sleepBtn = document.getElementById('start-sleep-btn');
             sleepBtn.disabled = false;
             sleepBtn.classList.add('stop-sleep');
-            sleepBtn.onclick = stopSleep;
             sleepBtn.querySelector('.emoji').textContent = '⏹';
             sleepBtn.querySelector('span:last-child').textContent = 'Stop Sleep';
 
@@ -2064,7 +2180,6 @@
             const sleepBtn = document.getElementById('start-sleep-btn');
             sleepBtn.disabled = false;
             sleepBtn.classList.remove('stop-sleep');
-            sleepBtn.onclick = startSleep;
             sleepBtn.querySelector('.emoji').textContent = '🛏️';
             sleepBtn.querySelector('span:last-child').textContent = 'Start Sleep';
 
