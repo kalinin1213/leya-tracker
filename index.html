@@ -1290,6 +1290,19 @@
         <!-- Stats View -->
         <div id="stats-view" class="view">
             <div class="stats-section">
+                <div class="stats-section-title">Activity Patterns</div>
+                <div class="chart-nav">
+                    <button class="chart-nav-btn" onclick="navigateChart('activity', -1)">&#8249;</button>
+                    <span class="chart-nav-label" id="activity-nav-label"></span>
+                    <button class="chart-nav-btn" id="activity-nav-fwd" onclick="navigateChart('activity', 1)">&#8250;</button>
+                </div>
+                <div class="chart-container activity-pattern-chart-container">
+                    <canvas id="activityPatternChart"></canvas>
+                </div>
+                <p class="chart-note">White borders = accidents · Half brown/blue = pee + poop together</p>
+            </div>
+
+            <div class="stats-section">
                 <div class="stats-section-title">Training</div>
                 <div class="chart-nav">
                     <button class="chart-nav-btn" onclick="navigateChart('training', -1)">&#8249;</button>
@@ -1301,19 +1314,6 @@
                 </div>
                 <div class="training-daily-breakdown" id="training-daily-breakdown"></div>
                 <div class="training-type-breakdown" id="training-type-breakdown"></div>
-            </div>
-
-            <div class="stats-section">
-                <div class="stats-section-title">Activity Patterns</div>
-                <div class="chart-nav">
-                    <button class="chart-nav-btn" onclick="navigateChart('activity', -1)">&#8249;</button>
-                    <span class="chart-nav-label" id="activity-nav-label"></span>
-                    <button class="chart-nav-btn" id="activity-nav-fwd" onclick="navigateChart('activity', 1)">&#8250;</button>
-                </div>
-                <div class="chart-container activity-pattern-chart-container">
-                    <canvas id="activityPatternChart"></canvas>
-                </div>
-                <p class="chart-note">White borders = accidents · Half brown/blue = pee + poop together</p>
             </div>
 
             <div class="stats-section">
